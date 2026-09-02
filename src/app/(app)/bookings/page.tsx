@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, desc, eq, gte, ilike, lte, or, sql, type SQL } from "drizzle-orm";
-import { Search, Ticket } from "lucide-react";
+import { Printer, Search, Ticket } from "lucide-react";
 import { db } from "@/db";
 import {
   agent, booking, bookingSeat, bus, route, seat, trip,
@@ -125,6 +125,7 @@ export default async function BookingsPage({
                 <th className="px-4 py-2.5 text-right font-medium">Amount</th>
                 <th className="px-4 py-2.5 font-medium">Payment</th>
                 <th className="px-4 py-2.5 font-medium">Booked by</th>
+                <th className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -178,6 +179,12 @@ export default async function BookingsPage({
                   <td className="px-4 py-3 text-xs text-ink-600">
                     {b.bookedBy}
                     <span className="block text-ink-400">{formatDateTime(b.createdAt)}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link href={`/tickets/${b.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline">
+                      <Printer size={12} /> Ticket
+                    </Link>
                   </td>
                 </tr>
               ))}

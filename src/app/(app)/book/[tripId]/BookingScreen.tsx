@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  AlertTriangle, CheckCircle2, Loader2, Lock, PauseCircle, RefreshCw, Ticket, X,
+  AlertTriangle, CheckCircle2, Loader2, Lock, PauseCircle, Printer, RefreshCw,
+  Ticket, X,
 } from "lucide-react";
 import { SeatMap, type SeatVisualState } from "@/components/seat-map/SeatMap";
 import type { SeatLike } from "@/components/seat-map/geometry";
@@ -84,7 +85,7 @@ export function BookingScreen({
   const [conflict, setConflict] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const [result, setResult] = useState<{ pnr: string; seatNumbers: string[]; amountTotalPaise: number } | null>(null);
+  const [result, setResult] = useState<{ bookingId: string; pnr: string; seatNumbers: string[]; amountTotalPaise: number } | null>(null);
   const [holdName, setHoldName] = useState("");
   const [holdPhone, setHoldPhone] = useState("");
   const [splitPrompt, setSplitPrompt] = useState<SplitPrompt | null>(null);
@@ -437,7 +438,7 @@ function SelectedList({ rows, fareOf, onRemove }: {
 }
 
 function BookingDone({ result, onNew }: {
-  result: { pnr: string; seatNumbers: string[]; amountTotalPaise: number };
+  result: { bookingId: string; pnr: string; seatNumbers: string[]; amountTotalPaise: number };
   onNew: () => void;
 }) {
   return (
@@ -455,10 +456,10 @@ function BookingDone({ result, onNew }: {
           className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
           <Ticket size={15} /> Book another
         </button>
-        <button type="button" onClick={() => window.print()}
-          className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
-          Print
-        </button>
+        <a href={`/tickets/${result.bookingId}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
+          <Printer size={15} /> Print ticket
+        </a>
         <a href="/holds"
           className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
           Reserved seats
@@ -483,7 +484,7 @@ function ConfirmPanel({
   onRelease: () => void;
   onExtend: () => void;
   onExpired: () => void;
-  onDone: (r: { pnr: string; seatNumbers: string[]; amountTotalPaise: number }) => void;
+  onDone: (r: { bookingId: string; pnr: string; seatNumbers: string[]; amountTotalPaise: number }) => void;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -531,6 +532,7 @@ function ConfirmPanel({
         return;
       }
       onDone({
+        bookingId: res.data.bookingId,
         pnr: res.data.pnr,
         seatNumbers: res.data.seatNumbers,
         amountTotalPaise: res.data.amountTotalPaise,

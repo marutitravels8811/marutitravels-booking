@@ -63,3 +63,91 @@ html, body {
   .no-print { display: none !important; }
   body { background: #fff; }
 }
+
+/* ──────────────────────── printing ────────────────────────
+   Three formats, chosen by data-print-format on the sheet:
+     a4-2up   two tickets per A4 page, the office default
+     a5       one ticket per A5 page
+     thermal  80mm roll, for a counter receipt printer
+   Screen shows the same markup so what you see is what prints. */
+
+.print-sheet { --ticket-w: 190mm; }
+.print-sheet[data-print-format="a5"]      { --ticket-w: 190mm; }
+.print-sheet[data-print-format="thermal"] { --ticket-w: 74mm; }
+
+.ticket {
+  width: 100%;
+  max-width: var(--ticket-w);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@media print {
+  /* the app chrome never reaches paper */
+  .no-print, nav, aside, header.app-bar { display: none !important; }
+
+  html, body {
+    background: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-sheet {
+    margin: 0;
+    padding: 0;
+    gap: 0 !important;
+    background: #fff;
+  }
+
+  .ticket {
+    max-width: none;
+    border: 1px dashed #94a3b8 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  /* two tickets per A4 sheet: each gets half the printable height */
+  .print-sheet[data-print-format="a4-2up"] .ticket {
+    height: 138mm;
+    overflow: hidden;
+  }
+  .print-sheet[data-print-format="a4-2up"] .ticket:nth-child(2n) {
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-sheet[data-print-format="a4-2up"] .ticket:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .print-sheet[data-print-format="a5"] .ticket {
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-sheet[data-print-format="a5"] .ticket:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .print-sheet[data-print-format="thermal"] .ticket {
+    border: none !important;
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-sheet[data-print-format="thermal"] .ticket:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* keep ink light and text black regardless of the screen palette */
+  .ticket * { color: #000 !important; }
+  .ticket .muted { color: #444 !important; }
+  .ticket .band {
+    background: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+@page { size: A4 portrait; margin: 8mm; }

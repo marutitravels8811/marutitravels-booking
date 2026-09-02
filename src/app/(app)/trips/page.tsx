@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { CalendarRange, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { db } from "@/db";
 import { bus, route } from "@/db/schema";
 import { listTripsForDate } from "@/server/services/trip";
@@ -118,16 +118,24 @@ export default async function TripsPage({
                       </>
                     )}
                   </span>
-                  {t.status === "SCHEDULED" ? (
-                    <Link href={`/book/${t.id}`}
-                      className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700">
-                      Open seat map
-                    </Link>
-                  ) : (
-                    <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-500">
-                      {t.status}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-2">
+                    {t.booked > 0 && (
+                      <Link href={`/trips/${t.id}/tickets`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50">
+                        <Printer size={12} /> Tickets
+                      </Link>
+                    )}
+                    {t.status === "SCHEDULED" ? (
+                      <Link href={`/book/${t.id}`}
+                        className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700">
+                        Open seat map
+                      </Link>
+                    ) : (
+                      <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-500">
+                        {t.status}
+                      </span>
+                    )}
+                  </span>
                 </div>
               </article>
             );

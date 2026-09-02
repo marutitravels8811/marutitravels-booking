@@ -20,8 +20,39 @@ Stack decisions and the phased build plan live in [`docs/PLAN.md`](docs/PLAN.md)
 - **Audit log** — append-only, records every state change with actor, timestamp,
   IP and a before/after diff.
 
-Trips, the hold-then-confirm booking flow, reports and ticket printing are the
-next phases — see the status table in `docs/PLAN.md`.
+- **Trips** — routes with pickup and drop points, daily schedules, an idempotent
+  generator, and ad-hoc extra buses.
+- **Booking** — seat map with live updates, manual seat-number entry, per-seat
+  prices defaulted from the bus and editable, and cash / online / pay-later.
+- **Parked reservations** — hold seats, serve other customers, confirm later.
+- **Tickets** — single or a whole trip at once, in three paper formats.
+
+Reports and the driver's passenger chart are the remaining phases — see the
+status table in `docs/PLAN.md`.
+
+## Printing tickets
+
+| Where | What it prints |
+|---|---|
+| `/tickets/<bookingId>` | One ticket. Linked from every row in Bookings and from the booking confirmation. |
+| `/trips/<tripId>/tickets` | Every live ticket on a trip, ordered by seat so the stack matches the passenger chart. Linked from the trip card. |
+
+Three formats, switchable on the page before printing:
+
+- **A4, 2 per page** — the office default, halves the paper on a batch.
+- **A5, 1 per page** — one ticket per sheet, larger text.
+- **Thermal 80mm** — for a counter receipt printer.
+
+A ticket carries the operator header, ticket number, route, date and departure,
+bus and registration, passenger and mobile, pickup and drop, every berth with
+its type and fare, the total, payment method and status (with the amount still
+to collect when unpaid), who booked it and when, and the printed terms.
+Cancelled bookings print with a CANCELLED watermark.
+
+Set the operator header in the environment — `OFFICE_NAME`, `OFFICE_PHONE`,
+`OFFICE_ADDRESS`, `OFFICE_GSTIN` and `OFFICE_TERMS`. They default to obvious
+placeholders so an unconfigured deployment is caught at the first print rather
+than by a customer.
 
 ## The seat layout
 

@@ -289,9 +289,9 @@ green and stays green, the product's core promise holds.
 | 0 · Foundation | ✅ done | Next.js 16, Tailwind 4, Drizzle, dual Neon/local Postgres client |
 | 1 · Schema & auth | ✅ done | 16 tables migrated and verified; JWT session auth; append-only audit log |
 | 2 · Seat layout engine | ✅ done | Generator, validator, versioning, and the full manual editor |
-| 3 · Trips & availability | ⬜ next | Routes, fares, schedule templates, trip generator, `trip_seat_state` seeding |
-| 4 · Hold & confirm | ⬜ | The concurrency core — build the CT-1…CT-7 suite alongside it |
-| 5 · Booking lifecycle | ⬜ | Search, payments, cancel, change seats, tickets |
+| 3 · Trips & availability | ✅ done | Routes, points, schedules, generator, ad-hoc buses |
+| 4 · Hold & confirm | ✅ done | 35 checks green, plus parked reservations |
+| 5 · Booking lifecycle | 🟡 partial | Search, payments and **ticket printing** done; cancel and change-seats have tested services but no screen yet |
 | 6 · Reports & audit | ⬜ | Collection, occupancy, audit viewer |
 | 7 · Hardening | ⬜ | Rate limits, E2E, parallel run, go-live |
 
