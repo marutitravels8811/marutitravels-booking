@@ -15,10 +15,16 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
 
-  // a tap through to a new page should close the drawer behind it
-  useEffect(() => { setOpen(false); }, [pathname]);
+  /**
+   * The drawer is open only while we are still on the page it was opened from,
+   * so navigating anywhere closes it. Deriving that from the pathname avoids
+   * a setState-in-effect and the extra render pass it would cost — and it
+   * closes on browser Back too, which an onClick handler would miss.
+   */
+  const [openedAt, setOpenedAt] = useState<string | null>(null);
+  const open = openedAt === pathname;
+  const setOpen = (next: boolean) => setOpenedAt(next ? pathname : null);
 
   // don't let the page scroll behind an open drawer
   useEffect(() => {

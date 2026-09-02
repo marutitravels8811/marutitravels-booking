@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import {
-  Bus, CalendarRange, LayoutDashboard, ListChecks, Route as RouteIcon,
-  Ticket, Timer,
+  Bus, LayoutDashboard, ListChecks, Route as RouteIcon, Ticket, Timer,
 } from "lucide-react";
 import { getVerifiedSession, destroySession } from "@/server/auth";
 import { AppShell } from "./AppShell";
