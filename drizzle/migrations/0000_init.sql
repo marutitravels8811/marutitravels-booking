@@ -1,11 +1,12 @@
 CREATE TYPE "public"."berth_type" AS ENUM('SLEEPER_SINGLE', 'SLEEPER_DOUBLE', 'CABIN');--> statement-breakpoint
-CREATE TYPE "public"."booking_status" AS ENUM('CONFIRMED', 'PARTIALLY_PAID', 'CANCELLED', 'NO_SHOW', 'COMPLETED');--> statement-breakpoint
+CREATE TYPE "public"."booking_status" AS ENUM('CONFIRMED', 'CANCELLED', 'NO_SHOW', 'COMPLETED');--> statement-breakpoint
 CREATE TYPE "public"."deck" AS ENUM('UPPER', 'LOWER', 'CABIN');--> statement-breakpoint
 CREATE TYPE "public"."direction" AS ENUM('ONWARD', 'RETURN');--> statement-breakpoint
 CREATE TYPE "public"."double_sofa_policy" AS ENUM('INDEPENDENT', 'PAIRED', 'SOFT_PAIR');--> statement-breakpoint
 CREATE TYPE "public"."gender" AS ENUM('M', 'F', 'O');--> statement-breakpoint
 CREATE TYPE "public"."hold_status" AS ENUM('ACTIVE', 'CONSUMED', 'RELEASED', 'EXPIRED');--> statement-breakpoint
-CREATE TYPE "public"."payment_type" AS ENUM('CASH', 'UPI', 'CARD', 'BANK_TRANSFER', 'WALLET', 'CREDIT', 'PARTIAL');--> statement-breakpoint
+CREATE TYPE "public"."payment_status" AS ENUM('PAID', 'PARTIAL', 'UNPAID');--> statement-breakpoint
+CREATE TYPE "public"."payment_type" AS ENUM('CASH', 'ONLINE', 'PENDING');--> statement-breakpoint
 CREATE TYPE "public"."seat_status" AS ENUM('AVAILABLE', 'HELD', 'BOOKED', 'BLOCKED');--> statement-breakpoint
 CREATE TYPE "public"."sofa_position" AS ENUM('A', 'B');--> statement-breakpoint
 CREATE TYPE "public"."trip_status" AS ENUM('SCHEDULED', 'DEPARTED', 'CANCELLED', 'COMPLETED');--> statement-breakpoint
@@ -55,9 +56,12 @@ CREATE TABLE "booking" (
 	"amount_total_paise" bigint NOT NULL,
 	"amount_paid_paise" bigint DEFAULT 0 NOT NULL,
 	"payment_type" "payment_type" NOT NULL,
+	"payment_status" "payment_status" DEFAULT 'PAID' NOT NULL,
 	"status" "booking_status" DEFAULT 'CONFIRMED' NOT NULL,
 	"boarding_point_id" uuid,
 	"dropping_point_id" uuid,
+	"boarding_name" text,
+	"dropping_name" text,
 	"note" text,
 	"hold_id" uuid,
 	"created_by_agent_id" uuid NOT NULL,
@@ -86,18 +90,11 @@ CREATE TABLE "bus" (
 	"display_name" text NOT NULL,
 	"note" text,
 	"current_layout_id" uuid,
+	"fare_single_sofa_paise" bigint DEFAULT 0 NOT NULL,
+	"fare_double_sofa_paise" bigint DEFAULT 0 NOT NULL,
+	"fare_cabin_paise" bigint DEFAULT 0 NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "fare_rule" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"route_id" uuid NOT NULL,
-	"direction" "direction",
-	"berth_type" "berth_type" NOT NULL,
-	"price_paise" bigint NOT NULL,
-	"valid_from" timestamp with time zone,
-	"valid_to" timestamp with time zone
 );
 --> statement-breakpoint
 CREATE TABLE "idempotency_key" (
@@ -239,7 +236,6 @@ ALTER TABLE "booking" ADD CONSTRAINT "booking_updated_by_agent_id_agent_id_fk" F
 ALTER TABLE "booking" ADD CONSTRAINT "booking_cancelled_by_agent_id_fk" FOREIGN KEY ("cancelled_by") REFERENCES "public"."agent"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "booking_seat" ADD CONSTRAINT "booking_seat_booking_id_booking_id_fk" FOREIGN KEY ("booking_id") REFERENCES "public"."booking"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "booking_seat" ADD CONSTRAINT "booking_seat_seat_id_seat_id_fk" FOREIGN KEY ("seat_id") REFERENCES "public"."seat"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "fare_rule" ADD CONSTRAINT "fare_rule_route_id_route_id_fk" FOREIGN KEY ("route_id") REFERENCES "public"."route"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "idempotency_key" ADD CONSTRAINT "idempotency_key_agent_id_agent_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agent"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment" ADD CONSTRAINT "payment_booking_id_booking_id_fk" FOREIGN KEY ("booking_id") REFERENCES "public"."booking"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment" ADD CONSTRAINT "payment_received_by_agent_id_agent_id_fk" FOREIGN KEY ("received_by_agent_id") REFERENCES "public"."agent"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -270,7 +266,6 @@ CREATE INDEX "booking_phone_idx" ON "booking" USING btree ("primary_phone");--> 
 CREATE INDEX "booking_created_idx" ON "booking" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "booking_agent_idx" ON "booking" USING btree ("created_by_agent_id","created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "bus_reg_uq" ON "bus" USING btree ("registration_no");--> statement-breakpoint
-CREATE INDEX "fare_lookup_idx" ON "fare_rule" USING btree ("route_id","direction","berth_type");--> statement-breakpoint
 CREATE INDEX "payment_booking_idx" ON "payment" USING btree ("booking_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "route_code_uq" ON "route" USING btree ("code");--> statement-breakpoint
 CREATE UNIQUE INDEX "seat_layout_number_uq" ON "seat" USING btree ("layout_id","seat_number");--> statement-breakpoint

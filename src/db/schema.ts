@@ -24,10 +24,16 @@ export const holdStatusEnum = pgEnum("hold_status", [
   "ACTIVE", "CONSUMED", "RELEASED", "EXPIRED",
 ]);
 export const bookingStatusEnum = pgEnum("booking_status", [
-  "CONFIRMED", "PARTIALLY_PAID", "CANCELLED", "NO_SHOW", "COMPLETED",
+  "CONFIRMED", "CANCELLED", "NO_SHOW", "COMPLETED",
 ]);
 export const paymentTypeEnum = pgEnum("payment_type", [
-  "CASH", "UPI", "CARD", "BANK_TRANSFER", "WALLET", "CREDIT", "PARTIAL",
+  "CASH",    // collected at the counter
+  "ONLINE",  // UPI / card / transfer — anything already settled electronically
+  "PENDING", // pay later, or collected on the bus by the conductor
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "PAID", "PARTIAL", "UNPAID",
 ]);
 export const doubleSofaPolicyEnum = pgEnum("double_sofa_policy", [
   "INDEPENDENT", "PAIRED", "SOFT_PAIR",
@@ -79,6 +85,14 @@ export const bus = pgTable("bus", {
   displayName: text("display_name").notNull(),
   note: text("note"),
   currentLayoutId: uuid("current_layout_id"),
+  /**
+   * Default price per berth type, in paise. These are the numbers the counter
+   * sees pre-filled when booking; the agent can still change the amount on any
+   * individual booking.
+   */
+  fareSingleSofaPaise: bigint("fare_single_sofa_paise", { mode: "number" }).notNull().default(0),
+  fareDoubleSofaPaise: bigint("fare_double_sofa_paise", { mode: "number" }).notNull().default(0),
+  fareCabinPaise: bigint("fare_cabin_paise", { mode: "number" }).notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("bus_reg_uq").on(t.registrationNo)]);
@@ -122,18 +136,6 @@ export const seat = pgTable("seat", {
     OR (${t.sofaGroupId} IS NOT NULL AND ${t.sofaPosition} IS NOT NULL)
   `),
 ]);
-
-/* ────────────────────────────── fares ────────────────────────────── */
-
-export const fareRule = pgTable("fare_rule", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  routeId: uuid("route_id").notNull().references(() => route.id, { onDelete: "cascade" }),
-  direction: directionEnum("direction"),
-  berthType: berthTypeEnum("berth_type").notNull(),
-  pricePaise: bigint("price_paise", { mode: "number" }).notNull(),
-  validFrom: timestamp("valid_from", { withTimezone: true }),
-  validTo: timestamp("valid_to", { withTimezone: true }),
-}, (t) => [index("fare_lookup_idx").on(t.routeId, t.direction, t.berthType)]);
 
 /* ──────────────────────── schedules and trips ────────────────────── */
 
@@ -201,9 +203,18 @@ export const booking = pgTable("booking", {
   amountTotalPaise: bigint("amount_total_paise", { mode: "number" }).notNull(),
   amountPaidPaise: bigint("amount_paid_paise", { mode: "number" }).notNull().default(0),
   paymentType: paymentTypeEnum("payment_type").notNull(),
+  paymentStatus: paymentStatusEnum("payment_status").notNull().default("PAID"),
   status: bookingStatusEnum("status").notNull().default("CONFIRMED"),
   boardingPointId: uuid("boarding_point_id").references(() => boardingPoint.id),
   droppingPointId: uuid("dropping_point_id").references(() => boardingPoint.id),
+  /**
+   * Text snapshots of the pickup and destination as they read at booking time.
+   * Kept alongside the ids so a printed ticket never changes meaning when a
+   * point is later renamed or removed, and so an agent can type a one-off
+   * pickup that is not in the route's list.
+   */
+  boardingName: text("boarding_name"),
+  droppingName: text("dropping_name"),
   note: text("note"),
   holdId: uuid("hold_id").references(() => seatHold.id),
   createdByAgentId: uuid("created_by_agent_id").notNull().references(() => agent.id),

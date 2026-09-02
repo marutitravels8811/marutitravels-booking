@@ -1,5 +1,5 @@
 {
-  "id": "c46166f0-81ed-4c05-b7e3-437144b3b55d",
+  "id": "a655782d-28d5-4593-bbf0-c8b0a585a06d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -398,6 +398,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "payment_status": {
+          "name": "payment_status",
+          "type": "payment_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PAID'"
+        },
         "status": {
           "name": "status",
           "type": "booking_status",
@@ -415,6 +423,18 @@
         "dropping_point_id": {
           "name": "dropping_point_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boarding_name": {
+          "name": "boarding_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dropping_name": {
+          "name": "dropping_name",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -784,6 +804,27 @@
           "primaryKey": false,
           "notNull": false
         },
+        "fare_single_sofa_paise": {
+          "name": "fare_single_sofa_paise",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "fare_double_sofa_paise": {
+          "name": "fare_double_sofa_paise",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "fare_cabin_paise": {
+          "name": "fare_cabin_paise",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "is_active": {
           "name": "is_active",
           "type": "boolean",
@@ -817,106 +858,6 @@
         }
       },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.fare_rule": {
-      "name": "fare_rule",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "route_id": {
-          "name": "route_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "direction": {
-          "name": "direction",
-          "type": "direction",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "berth_type": {
-          "name": "berth_type",
-          "type": "berth_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "price_paise": {
-          "name": "price_paise",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "valid_from": {
-          "name": "valid_from",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "valid_to": {
-          "name": "valid_to",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "fare_lookup_idx": {
-          "name": "fare_lookup_idx",
-          "columns": [
-            {
-              "expression": "route_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "direction",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "berth_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "fare_rule_route_id_route_id_fk": {
-          "name": "fare_rule_route_id_route_id_fk",
-          "tableFrom": "fare_rule",
-          "tableTo": "route",
-          "columnsFrom": [
-            "route_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -2221,7 +2162,6 @@
       "schema": "public",
       "values": [
         "CONFIRMED",
-        "PARTIALLY_PAID",
         "CANCELLED",
         "NO_SHOW",
         "COMPLETED"
@@ -2272,17 +2212,22 @@
         "EXPIRED"
       ]
     },
+    "public.payment_status": {
+      "name": "payment_status",
+      "schema": "public",
+      "values": [
+        "PAID",
+        "PARTIAL",
+        "UNPAID"
+      ]
+    },
     "public.payment_type": {
       "name": "payment_type",
       "schema": "public",
       "values": [
         "CASH",
-        "UPI",
-        "CARD",
-        "BANK_TRANSFER",
-        "WALLET",
-        "CREDIT",
-        "PARTIAL"
+        "ONLINE",
+        "PENDING"
       ]
     },
     "public.seat_status": {

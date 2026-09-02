@@ -12,7 +12,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:concurrency": "tsx tests/concurrency/run.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
