@@ -1,19 +1,14 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { CalendarRange, ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import { CalendarRange, Printer } from "lucide-react";
 import { db } from "@/db";
 import { bus, route } from "@/db/schema";
 import { listTripsForDate } from "@/server/services/trip";
 import { serviceDateOf, formatTime } from "@/lib/time";
 import { TripTools } from "./TripTools";
+import { DatePicker } from "./DatePicker";
 
 export const dynamic = "force-dynamic";
-
-function shiftDate(d: string, days: number) {
-  const x = new Date(`${d}T00:00:00Z`);
-  x.setUTCDate(x.getUTCDate() + days);
-  return x.toISOString().slice(0, 10);
-}
 
 export default async function TripsPage({
   searchParams,
@@ -48,19 +43,8 @@ export default async function TripsPage({
           buses={buses.map((b) => ({ id: b.id, label: `${b.displayName} (${b.registrationNo})` }))} />
       </header>
 
-      <nav className="mb-4 flex items-center gap-2">
-        <Link href={`/trips?date=${shiftDate(date, -1)}`}
-          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50">
-          <ChevronLeft size={14} /> Previous
-        </Link>
-        <Link href={`/trips?date=${serviceDateOf()}`}
-          className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50">
-          Today
-        </Link>
-        <Link href={`/trips?date=${shiftDate(date, 1)}`}
-          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50">
-          Next <ChevronRight size={14} />
-        </Link>
+      <nav className="mb-4">
+        <DatePicker date={date} today={serviceDateOf()} />
       </nav>
 
       {trips.length === 0 ? (

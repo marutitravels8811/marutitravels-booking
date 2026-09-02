@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Bus, Loader2 } from "lucide-react";
 import { loginAction, type LoginState } from "./actions";
+import { Alert } from "@/components/ui/Alert";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState<LoginState, FormData>(
@@ -36,18 +38,18 @@ export default function LoginPage() {
             autoComplete="current-password"
             className="mb-4 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
 
-          {state.error && (
-            <p role="alert"
-              className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-              {state.error}
-            </p>
-          )}
+          {state.error && <Alert className="mb-4">{state.error}</Alert>}
 
           <button type="submit" disabled={pending}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60">
             {pending && <Loader2 size={15} className="animate-spin" />}
             Sign in
           </button>
+
+          <Link href="/forgot-password"
+            className="mt-4 block text-center text-xs text-ink-500 hover:text-ink-800">
+            Forgotten your password?
+          </Link>
         </form>
       </div>
     </main>

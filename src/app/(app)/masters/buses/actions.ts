@@ -7,32 +7,23 @@ import { bus } from "@/db/schema";
 import { requireSession, requestMeta } from "@/server/auth";
 import { writeAudit } from "@/server/audit";
 import { busFormSchema } from "@/lib/schemas";
-import { saveLayoutVersion, LayoutError } from "@/server/services/layout";
+import { saveLayoutVersion } from "@/server/services/layout";
+import { failure, zodFailure, AppError } from "@/server/errors";
 
 export interface BusActionResult {
   ok: boolean;
   busId?: string;
-  error?: string;
-  fieldErrors?: Record<string, string>;
   createdNewVersion?: boolean;
+  error?: string;
+  code?: string;
+  fieldErrors?: Record<string, string>;
 }
 
 export async function saveBusAction(raw: unknown): Promise<BusActionResult> {
   const session = await requireSession();
 
   const parsed = busFormSchema.safeParse(raw);
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const path = issue.path.join(".");
-      if (!fieldErrors[path]) fieldErrors[path] = issue.message;
-    }
-    return {
-      ok: false,
-      error: parsed.error.issues[0]?.message ?? "Check the form",
-      fieldErrors,
-    };
-  }
+  if (!parsed.success) return zodFailure(parsed.error);
 
   const v = parsed.data;
   const meta = await requestMeta();
@@ -44,7 +35,10 @@ export async function saveBusAction(raw: unknown): Promise<BusActionResult> {
 
       if (busId) {
         const [existing] = await tx.select().from(bus).where(eq(bus.id, busId)).limit(1);
-        if (!existing) throw new LayoutError("BUS_NOT_FOUND", "That bus no longer exists.");
+        if (!existing) {
+          throw new AppError("BUS_NOT_FOUND",
+            "That bus no longer exists. It may have been removed by another agent.");
+        }
         before = existing;
         await tx.update(bus).set({
           registrationNo: v.registrationNo,
@@ -94,18 +88,6 @@ export async function saveBusAction(raw: unknown): Promise<BusActionResult> {
     revalidatePath("/masters/buses");
     return { ok: true, ...result };
   } catch (e) {
-    if (e instanceof LayoutError) return { ok: false, error: e.message };
-    const msg = e instanceof Error ? e.message : "Something went wrong";
-    if (msg.includes("bus_reg_uq")) {
-      return {
-        ok: false,
-        error: "Another bus already uses that registration number.",
-        fieldErrors: { registrationNo: "Already in use" },
-      };
-    }
-    if (msg.includes("seat_layout_number_uq")) {
-      return { ok: false, error: "Two berths share the same seat number." };
-    }
-    return { ok: false, error: msg };
+    return failure(e, "saveBus");
   }
 }

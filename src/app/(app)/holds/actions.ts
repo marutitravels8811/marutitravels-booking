@@ -6,6 +6,7 @@ import {
   listActiveHolds, releaseHold, extendHold, setHoldProvisional,
   type ActiveHoldRow,
 } from "@/server/services/seat-hold";
+import { failure } from "@/server/errors";
 
 export interface HoldSummary {
   holdId: string;
@@ -55,39 +56,43 @@ export async function listHoldsAction(mineOnly = false): Promise<{
 
 export async function releaseHoldFromTrayAction(
   holdId: string, reason?: string,
-): Promise<{ ok: boolean; error?: string }> {
-  const session = await requireSession();
+): Promise<{ ok: boolean; error?: string; code?: string }> {
   try {
+    const session = await requireSession();
     await releaseHold({ holdId, agentId: session.agentId, reason: reason ?? null });
     revalidatePath("/holds");
     revalidatePath("/trips");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Could not release" };
+    return failure(e, "releaseHoldFromTray");
   }
 }
 
 export async function extendHoldFromTrayAction(
   holdId: string,
-): Promise<{ ok: boolean; expiresAt?: string; error?: string }> {
-  const session = await requireSession();
+): Promise<{ ok: boolean; expiresAt?: string; error?: string; code?: string }> {
   try {
+    const session = await requireSession();
     const r = await extendHold({ holdId, agentId: session.agentId });
     revalidatePath("/holds");
     return { ok: true, expiresAt: r.expiresAt.toISOString() };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Could not extend" };
+    return failure(e, "extendHoldFromTray");
   }
 }
 
 export async function saveHoldCustomerAction(
   holdId: string, name: string, phone: string,
-): Promise<{ ok: boolean }> {
-  const session = await requireSession();
-  await setHoldProvisional({
-    holdId, agentId: session.agentId,
-    provisionalName: name, provisionalPhone: phone,
-  });
-  revalidatePath("/holds");
-  return { ok: true };
+): Promise<{ ok: boolean; error?: string; code?: string }> {
+  try {
+    const session = await requireSession();
+    await setHoldProvisional({
+      holdId, agentId: session.agentId,
+      provisionalName: name, provisionalPhone: phone,
+    });
+    revalidatePath("/holds");
+    return { ok: true };
+  } catch (e) {
+    return failure(e, "saveHoldCustomer");
+  }
 }

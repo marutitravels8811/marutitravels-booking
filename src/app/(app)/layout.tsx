@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import {
-  Bus, LayoutDashboard, ListChecks, Route as RouteIcon, Ticket, Timer,
+  Bus, LayoutDashboard, ListChecks, Route as RouteIcon, Ticket, Timer, Users,
 } from "lucide-react";
 import { getVerifiedSession, destroySession } from "@/server/auth";
 import { AppShell } from "./AppShell";
@@ -12,11 +12,18 @@ const NAV = [
   { href: "/bookings", label: "Bookings", icon: <ListChecks size={16} /> },
   { href: "/masters/buses", label: "Buses", icon: <Bus size={16} /> },
   { href: "/masters/routes", label: "Routes", icon: <RouteIcon size={16} /> },
+  { href: "/masters/agents", label: "Agents", icon: <Users size={16} /> },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getVerifiedSession();
   if (!session) redirect("/login");
+
+  // A temporary password issued by a colleague grants exactly one privilege:
+  // replacing itself. Enforced here so no page in the app can be reached around
+  // it, including by typing a URL directly. The change-password page lives
+  // outside this layout, so this cannot loop.
+  if (session.mustChangePassword) redirect("/change-password?first=1");
 
   async function logout() {
     "use server";

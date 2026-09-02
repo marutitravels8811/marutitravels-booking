@@ -7,11 +7,13 @@ import { boardingPoint, route } from "@/db/schema";
 import { requireSession, requestMeta } from "@/server/auth";
 import { writeAudit } from "@/server/audit";
 import { routeFormSchema } from "@/lib/schemas";
+import { failure, zodFailure, AppError } from "@/server/errors";
 
 export interface RouteActionResult {
   ok: boolean;
   routeId?: string;
   error?: string;
+  code?: string;
   fieldErrors?: Record<string, string>;
 }
 
@@ -19,14 +21,7 @@ export async function saveRouteAction(raw: unknown): Promise<RouteActionResult> 
   const session = await requireSession();
 
   const parsed = routeFormSchema.safeParse(raw);
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const i of parsed.error.issues) {
-      const k = i.path.join(".");
-      if (!fieldErrors[k]) fieldErrors[k] = i.message;
-    }
-    return { ok: false, error: parsed.error.issues[0]?.message, fieldErrors };
-  }
+  if (!parsed.success) return zodFailure(parsed.error);
 
   const v = parsed.data;
   const meta = await requestMeta();
@@ -38,7 +33,9 @@ export async function saveRouteAction(raw: unknown): Promise<RouteActionResult> 
 
       if (id) {
         const [existing] = await tx.select().from(route).where(eq(route.id, id)).limit(1);
-        if (!existing) throw new Error("That route no longer exists.");
+        if (!existing) {
+          throw new AppError("ROUTE_NOT_FOUND", "That route no longer exists.");
+        }
         before = existing;
         await tx.update(route).set({
           code: v.code, origin: v.origin, destination: v.destination,
@@ -92,11 +89,6 @@ export async function saveRouteAction(raw: unknown): Promise<RouteActionResult> 
     revalidatePath("/masters/routes");
     return { ok: true, routeId };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Something went wrong";
-    if (msg.includes("route_code_uq")) {
-      return { ok: false, error: "Another route already uses that code.",
-               fieldErrors: { code: "Already in use" } };
-    }
-    return { ok: false, error: msg };
+    return failure(e, "saveRoute");
   }
 }

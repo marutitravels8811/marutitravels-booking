@@ -19,6 +19,31 @@ Stack decisions and the phased build plan live in [`docs/PLAN.md`](docs/PLAN.md)
   were sold against.
 - **Audit log** — append-only, records every state change with actor, timestamp,
   IP and a before/after diff.
+- **Agents** — add colleagues, deactivate them, reset a forgotten password.
+
+## Accounts and passwords
+
+There is one role. Everyone can do everything, and the audit log records who
+did what — restricting actions was traded for making every action attributable.
+
+**Adding an agent** generates a one-time password shown once on screen. It uses
+no characters that are ambiguous read aloud (no `0`/`O`, `1`/`l`, `5`/`S`) and is
+grouped in fours, because it gets dictated across a counter. The new agent must
+choose their own password before anything else in the app is reachable.
+
+**A forgotten password** is handled without a mail server. The agent raises a
+request from the login page; any signed-in colleague sees it on the Agents
+screen and approves it, which issues a temporary password to read out. The
+request expires after an hour. Adding SMTP for a single office would be a cost
+and a dependency for something a colleague settles in ten seconds.
+
+The login form gives the same answer for a wrong password and an unknown email,
+and requesting a reset for an address with no account silently does nothing —
+otherwise either form could be used to discover which addresses have accounts.
+
+Agents are deactivated, never deleted: bookings carry `created_by_agent_id`
+forever, so removing the row would erase who made a sale. The last active
+account cannot be deactivated.
 
 - **Trips** — routes with pickup and drop points, daily schedules, an idempotent
   generator, and ad-hoc extra buses.

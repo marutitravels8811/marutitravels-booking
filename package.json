@@ -14,7 +14,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "typecheck": "tsc --noEmit",
     "test:concurrency": "tsx tests/concurrency/run.ts",
-    "test:unit": "tsx tests/unit/seat-selection.ts",
+    "test:unit": "tsx tests/unit/seat-selection.ts && tsx tests/unit/errors.ts",
     "test": "pnpm test:unit && pnpm test:concurrency"
   },
   "dependencies": {

@@ -2,7 +2,7 @@ import "server-only";
 import { cookies, headers } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { hashPassword, verifyPassword, DUMMY_HASH } from "@/lib/password";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { agent } from "@/db/schema";
 
@@ -21,6 +21,8 @@ export interface Session {
   agentId: string;
   name: string;
   email: string;
+  /** true while a temporary password is still in force */
+  mustChangePassword?: boolean;
 }
 
 export { hashPassword, verifyPassword };
@@ -92,15 +94,20 @@ export async function getVerifiedSession(): Promise<Session | null> {
 
   const [row] = await db
     .select({ id: agent.id, name: agent.name, email: agent.email,
-              isActive: agent.isActive })
+              isActive: agent.isActive,
+              mustChangePassword: agent.mustChangePassword })
     .from(agent).where(eq(agent.id, s.agentId)).limit(1);
 
   if (!row || !row.isActive) {
     await tryDestroySession();
     return null;
   }
-  // trust the database over the token for display fields
-  return { agentId: row.id, name: row.name, email: row.email };
+  // trust the database over the token: a password reset issued by a colleague
+  // must take effect on the next request, not when the token happens to expire
+  return {
+    agentId: row.id, name: row.name, email: row.email,
+    mustChangePassword: row.mustChangePassword,
+  };
 }
 
 /** Throws if not signed in, or if the account no longer exists. */
@@ -123,7 +130,13 @@ export async function login(email: string, password: string): Promise<Session> {
   if (!found || !ok) throw new Error("INVALID_CREDENTIALS");
   if (!found.isActive) throw new Error("ACCOUNT_DISABLED");
 
-  const session: Session = { agentId: found.id, name: found.name, email: found.email };
+  await db.update(agent).set({ lastLoginAt: sql`now()` })
+    .where(eq(agent.id, found.id));
+
+  const session: Session = {
+    agentId: found.id, name: found.name, email: found.email,
+    mustChangePassword: found.mustChangePassword,
+  };
   await createSession(session);
   return session;
 }

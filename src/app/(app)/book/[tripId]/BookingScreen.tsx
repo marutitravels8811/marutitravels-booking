@@ -234,10 +234,11 @@ export function BookingScreen({
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_400px]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <TripBar trip={trip} />
+    <div className="flex flex-col gap-4">
+      <TripBar trip={trip} />
 
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="flex min-w-0 flex-col gap-4">
         {error && (
           <div role="alert"
             className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -284,24 +285,25 @@ export function BookingScreen({
                 onRemove={toggleSeat} />
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[var(--border)] pt-3">
-              <div>
-                <label htmlFor="hold-name" className="mb-1 block text-[11px] font-medium text-ink-600">
-                  Customer name <span className="text-ink-400">(optional)</span>
-                </label>
+            <div className="mt-4 border-t border-[var(--border)] pt-3">
+              <p className="mb-1.5 text-[11px] font-medium text-ink-600">
+                Who is it for? <span className="font-normal text-ink-400">optional</span>
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
                 <input id="hold-name" value={holdName}
                   onChange={(e) => setHoldName(e.target.value)}
-                  placeholder="So you recognise it later"
-                  className="w-full rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs outline-none focus:border-brand-500" />
-              </div>
-              <div>
-                <label htmlFor="hold-phone" className="mb-1 block text-[11px] font-medium text-ink-600">
-                  Phone <span className="text-ink-400">(optional)</span>
-                </label>
+                  aria-label="Customer name for this reservation"
+                  placeholder="Name"
+                  className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
                 <input id="hold-phone" value={holdPhone} inputMode="tel"
                   onChange={(e) => setHoldPhone(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs outline-none focus:border-brand-500" />
+                  aria-label="Customer phone for this reservation"
+                  placeholder="Phone"
+                  className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
               </div>
+              <p className="mt-1 text-[11px] text-ink-400">
+                Helps you recognise the reservation if you park it.
+              </p>
             </div>
 
             <button type="button" onClick={doHold}
@@ -311,9 +313,9 @@ export function BookingScreen({
               Reserve {selected.size > 0 ? `${selected.size} seat${selected.size > 1 ? "s" : ""}` : "seats"}
             </button>
             <p className="mt-2 text-[11px] leading-relaxed text-ink-500">
-              Reserving holds the seats for you while payment is arranged. You
-              can serve the next customer and come back — the reservation waits
-              for you under <strong className="font-medium text-ink-700">Reserved seats</strong>.
+              Holds the seats while payment is arranged. Serve the next customer
+              and come back to it under{" "}
+              <strong className="font-medium text-ink-700">Reserved seats</strong>.
             </p>
           </section>
         )}
@@ -333,6 +335,8 @@ export function BookingScreen({
           />
         )}
       </aside>
+
+      </div>
 
       {splitPrompt && (
         <SplitSofaDialog

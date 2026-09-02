@@ -7,37 +7,36 @@ import { confirmBookingSchema, holdSeatsSchema } from "@/lib/schemas";
 import {
   createHold, extendHold, releaseHold, getTripSeatStates, resolveSeatNumbers,
   getActiveHold, setHoldProvisional,
-  SeatConflictError, HoldError, type SeatStateRow,
+  SeatConflictError, type SeatStateRow,
 } from "@/server/services/seat-hold";
-import { confirmBooking, BookingError } from "@/server/services/booking";
+import { confirmBooking } from "@/server/services/booking";
+import { failure, zodFailure } from "@/server/errors";
 
 export interface Result<T = unknown> {
   ok: boolean;
   data?: T;
   error?: string;
   code?: string;
+  /** seat numbers another agent took first, so the map can flag them */
   conflictingSeats?: string[];
   fieldErrors?: Record<string, string>;
 }
 
-function fail<T>(e: unknown): Result<T> {
+/**
+ * A seat conflict carries the specific berths that were lost, which the map
+ * highlights — so it is handled before the generic mapper, which would keep the
+ * wording but drop that detail.
+ */
+function fail<T>(e: unknown, context: string): Result<T> {
   if (e instanceof SeatConflictError) {
     return { ok: false, code: "SEAT_CONFLICT", error: e.message,
              conflictingSeats: e.conflictingSeatNumbers };
   }
-  if (e instanceof HoldError) return { ok: false, code: e.code, error: e.message };
-  if (e instanceof BookingError) return { ok: false, code: e.code, error: e.message };
-  return { ok: false, error: e instanceof Error ? e.message : "Something went wrong" };
+  return failure<T>(e, context);
 }
 
 function zodFail<T>(e: z.ZodError): Result<T> {
-  const fieldErrors: Record<string, string> = {};
-  for (const i of e.issues) {
-    const k = i.path.map(String).join(".");
-    if (!fieldErrors[k]) fieldErrors[k] = i.message;
-  }
-  return { ok: false, code: "VALIDATION_FAILED",
-           error: e.issues[0]?.message, fieldErrors };
+  return zodFailure<T>(e);
 }
 
 export interface SeatSnapshot {
@@ -50,6 +49,14 @@ export async function fetchSeatsAction(tripId: string): Promise<SeatSnapshot> {
   await requireSession();
   const { seats, serverNow } = await getTripSeatStates(tripId);
   return { seats, serverNow: serverNow.toISOString() };
+}
+
+export async function fetchSeatsSafeAction(
+  tripId: string,
+): Promise<Result<SeatSnapshot>> {
+  try {
+    return { ok: true, data: await fetchSeatsAction(tripId) };
+  } catch (e) { return fail(e, "fetchSeats"); }
 }
 
 export async function holdSeatsAction(raw: unknown): Promise<Result<{
@@ -73,7 +80,7 @@ export async function holdSeatsAction(raw: unknown): Promise<Result<{
       serverNow: h.serverNow.toISOString(),
       seatNumbers: h.seatNumbers,
     } };
-  } catch (e) { return fail(e); }
+  } catch (e) { return fail(e, "holdSeats"); }
 }
 
 export async function extendHoldAction(holdId: string): Promise<Result<{
@@ -87,7 +94,7 @@ export async function extendHoldAction(holdId: string): Promise<Result<{
       serverNow: r.serverNow.toISOString(),
       extensionCount: r.extensionCount,
     } };
-  } catch (e) { return fail(e); }
+  } catch (e) { return fail(e, "extendHold"); }
 }
 
 export async function releaseHoldAction(
@@ -97,20 +104,21 @@ export async function releaseHoldAction(
   try {
     await releaseHold({ holdId, agentId: session.agentId, reason: reason ?? null });
     return { ok: true };
-  } catch (e) { return fail(e); }
+  } catch (e) { return fail(e, "releaseHold"); }
 }
 
 /** Turn typed seat numbers into ids, so an agent can key "U7, L3" instead of clicking. */
 export async function resolveSeatNumbersAction(
   tripId: string, raw: string,
 ): Promise<Result<{ found: { seatId: string; seatNumber: string }[]; unknown: string[] }>> {
-  await requireSession();
-  const numbers = raw.split(/[\s,;/]+/).filter(Boolean);
-  if (numbers.length === 0) {
-    return { ok: false, error: "Type one or more seat numbers." };
-  }
-  const r = await resolveSeatNumbers(tripId, numbers);
-  return { ok: true, data: r };
+  try {
+    await requireSession();
+    const numbers = raw.split(/[\s,;/]+/).filter(Boolean);
+    if (numbers.length === 0) {
+      return { ok: false, code: "NO_INPUT", error: "Type one or more seat numbers." };
+    }
+    return { ok: true, data: await resolveSeatNumbers(tripId, numbers) };
+  } catch (e) { return fail(e, "resolveSeatNumbers"); }
 }
 
 export async function confirmBookingAction(raw: unknown): Promise<Result<{
@@ -147,7 +155,7 @@ export async function confirmBookingAction(raw: unknown): Promise<Result<{
     revalidatePath("/trips");
     revalidatePath("/bookings");
     return { ok: true, data: r };
-  } catch (e) { return fail(e); }
+  } catch (e) { return fail(e, "confirmBooking"); }
 }
 
 /** Park the current reservation with a note about who it is for. */
@@ -161,7 +169,7 @@ export async function parkHoldAction(
       provisionalName: name, provisionalPhone: phone,
     });
     return { ok: true };
-  } catch (e) { return fail(e); }
+  } catch (e) { return fail(e, "parkHold"); }
 }
 
 /** Reload a still-live reservation so an agent can finish it later. */

@@ -48,10 +48,45 @@ export const agent = pgTable("agent", {
   email: text("email").notNull(),
   phone: text("phone"),
   passwordHash: text("password_hash").notNull(),
+  /** set when a password was issued by someone else; forces a change at login */
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("agent_email_uq").on(t.email)]);
+
+export const passwordResetStatusEnum = pgEnum("password_reset_status", [
+  "PENDING", "COMPLETED", "CANCELLED", "EXPIRED",
+]);
+
+/**
+ * A request to have a password reissued.
+ *
+ * There is no mail server in this deployment, and adding one for a single
+ * office would be a cost and a dependency for something a colleague can settle
+ * in ten seconds. So a forgotten password becomes a request that any signed-in
+ * agent can approve, which issues a one-time password shown once on screen and
+ * read out to the person. Every step is audited, and the partial unique index
+ * stops a queue of duplicate requests building up for one agent.
+ */
+export const passwordReset = pgTable("password_reset", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: uuid("agent_id").notNull().references(() => agent.id, { onDelete: "cascade" }),
+  status: passwordResetStatusEnum("status").notNull().default("PENDING"),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  requestedIp: text("requested_ip"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  approvedBy: uuid("approved_by").references(() => agent.id),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  note: text("note"),
+}, (t) => [
+  index("password_reset_agent_idx").on(t.agentId, t.status),
+  index("password_reset_status_idx").on(t.status, t.requestedAt),
+  uniqueIndex("password_reset_pending_uq").on(t.agentId)
+    .where(sql`${t.status} = 'PENDING'`),
+]);
 
 /* ────────────────────────────── route ────────────────────────────── */
 
