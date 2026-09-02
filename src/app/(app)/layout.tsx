@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bus, CalendarRange, LayoutDashboard, Ticket, Route as RouteIcon, BarChart3 } from "lucide-react";
+import { Bus, CalendarRange, LayoutDashboard, ListChecks, Ticket, Timer, Route as RouteIcon } from "lucide-react";
 import { getSession, destroySession } from "@/server/auth";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/book", label: "Book a ticket", icon: Ticket },
   { href: "/trips", label: "Trips", icon: CalendarRange },
+  { href: "/holds", label: "Reserved seats", icon: Timer },
+  { href: "/bookings", label: "Bookings", icon: ListChecks },
   { href: "/masters/buses", label: "Buses", icon: Bus },
   { href: "/masters/routes", label: "Routes", icon: RouteIcon },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

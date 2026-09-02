@@ -3,12 +3,37 @@ import { eq, sql } from "drizzle-orm";
 import { db, pool } from "../../src/db";
 import {
   agent, booking, bookingSeat, bus, route, seat, seatHold, trip, tripSeatState,
-  auditLog, payment, seatLayout,
+  auditLog, payment, scheduleTemplate, seatLayout,
 } from "../../src/db/schema";
 import { hashPassword } from "../../src/lib/password";
 import { generateStandardLayout } from "../../src/lib/seat-layout";
 import { saveLayoutVersion } from "../../src/server/services/layout";
 import { createTrip } from "../../src/server/services/trip";
+
+/**
+ * This suite truncates every table between tests, so it must never be pointed
+ * at a database that holds real bookings. The guard is deliberately awkward to
+ * satisfy: an accidental run against the office's live Neon database would
+ * destroy the booking history, and no test result is worth that risk.
+ */
+export function assertSafeDatabase(): void {
+  const url = process.env.DATABASE_URL ?? "";
+  if (!url) throw new Error("DATABASE_URL is not set.");
+
+  const dbName = (url.split("/").pop() ?? "").split("?")[0].toLowerCase();
+  const looksDisposable = /(^|[_-])(test|ci|scratch|dev)([_-]|$)/.test(dbName);
+  const overridden = process.env.ALLOW_DESTRUCTIVE_TESTS === "yes-wipe-this-database";
+
+  if (!looksDisposable && !overridden) {
+    throw new Error(
+      `Refusing to run destructive tests against "${dbName}".\n` +
+      `This suite deletes every row in every table.\n\n` +
+      `Point DATABASE_URL at a database whose name contains test, ci, scratch ` +
+      `or dev — or, if you are certain, set\n` +
+      `  ALLOW_DESTRUCTIVE_TESTS=yes-wipe-this-database`,
+    );
+  }
+}
 
 export interface Fixture {
   agentIds: string[];
@@ -134,6 +159,7 @@ export async function cleanup() {
   await db.delete(seatHold);
   await db.delete(tripSeatState);
   await db.delete(trip);
+  await db.delete(scheduleTemplate);  // references bus, so it must go first
   await db.delete(seat);
   await db.execute(sql`update ${bus} set current_layout_id = null`);
   await db.delete(seatLayout);

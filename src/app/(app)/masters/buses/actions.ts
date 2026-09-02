@@ -51,6 +51,9 @@ export async function saveBusAction(raw: unknown): Promise<BusActionResult> {
           displayName: v.displayName,
           note: v.note || null,
           isActive: v.isActive,
+          fareSingleSofaPaise: v.fareSingleSofa,
+          fareDoubleSofaPaise: v.fareDoubleSofa,
+          fareCabinPaise: v.fareCabin,
         }).where(eq(bus.id, busId));
       } else {
         const [created] = await tx.insert(bus).values({
@@ -58,6 +61,9 @@ export async function saveBusAction(raw: unknown): Promise<BusActionResult> {
           displayName: v.displayName,
           note: v.note || null,
           isActive: v.isActive,
+          fareSingleSofaPaise: v.fareSingleSofa,
+          fareDoubleSofaPaise: v.fareDoubleSofa,
+          fareCabinPaise: v.fareCabin,
         }).returning();
         busId = created.id;
       }

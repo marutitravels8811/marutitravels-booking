@@ -1,6 +1,6 @@
 // Server-side only. Not marked `server-only` so scripts and the concurrency
 // test harness can call these services directly under tsx.
-import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, type Tx } from "@/db";
 import {
   bus, route, scheduleTemplate, seat, seatLayout, trip, tripSeatState,

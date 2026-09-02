@@ -14,6 +14,10 @@ export interface BusFormInitial {
   displayName: string;
   note: string;
   isActive: boolean;
+  /** rupees, as shown in the form */
+  fareSingleSofa: number;
+  fareDoubleSofa: number;
+  fareCabin: number;
   layout: DraftLayout;
   layoutInUse: boolean;
   layoutVersion?: number;
@@ -27,6 +31,9 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
   const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [fareSingleSofa, setFareSingleSofa] = useState(String(initial?.fareSingleSofa ?? ""));
+  const [fareDoubleSofa, setFareDoubleSofa] = useState(String(initial?.fareDoubleSofa ?? ""));
+  const [fareCabin, setFareCabin] = useState(String(initial?.fareCabin ?? ""));
   const [layout, setLayout] = useState<DraftLayout>(
     initial?.layout ?? generateStandardLayout(),
   );
@@ -41,6 +48,9 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
       const res = await saveBusAction({
         id: initial?.id,
         registrationNo, displayName, note, isActive,
+        fareSingleSofa: fareSingleSofa || 0,
+        fareDoubleSofa: fareDoubleSofa || 0,
+        fareCabin: fareCabin || 0,
         layout: { ...layout, name: layout.name || `${displayName} layout` },
       });
       if (!res.ok) {
@@ -76,6 +86,33 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
               className={inputCls(false)} />
           </Field>
         </div>
+        <fieldset className="mt-5 rounded-lg border border-[var(--border)] p-4">
+          <legend className="px-1 text-xs font-medium text-ink-700">
+            Default fares
+          </legend>
+          <p className="mb-3 text-xs text-ink-500">
+            These pre-fill the price when booking this bus. The agent can still
+            change the amount on any individual ticket.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Single sofa (₹)" error={fieldErrors.fareSingleSofa}>
+              <input value={fareSingleSofa} inputMode="decimal"
+                onChange={(e) => setFareSingleSofa(e.target.value)}
+                placeholder="900" className={inputCls(!!fieldErrors.fareSingleSofa)} />
+            </Field>
+            <Field label="Double sofa, per berth (₹)" error={fieldErrors.fareDoubleSofa}>
+              <input value={fareDoubleSofa} inputMode="decimal"
+                onChange={(e) => setFareDoubleSofa(e.target.value)}
+                placeholder="800" className={inputCls(!!fieldErrors.fareDoubleSofa)} />
+            </Field>
+            <Field label="Cabin seat (₹)" error={fieldErrors.fareCabin}>
+              <input value={fareCabin} inputMode="decimal"
+                onChange={(e) => setFareCabin(e.target.value)}
+                placeholder="1200" className={inputCls(!!fieldErrors.fareCabin)} />
+            </Field>
+          </div>
+        </fieldset>
+
         <label className="mt-4 inline-flex items-center gap-2 text-sm text-ink-700">
           <input type="checkbox" checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}

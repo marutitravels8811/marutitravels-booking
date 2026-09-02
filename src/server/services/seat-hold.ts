@@ -1,11 +1,19 @@
 // Server-side only. Not marked `server-only` so the concurrency test harness
 // can drive these functions directly under tsx.
 import { and, eq, sql } from "drizzle-orm";
-import { db, type Tx } from "@/db";
-import { agent, seat, seatHold, trip, tripSeatState } from "@/db/schema";
+import { db } from "@/db";
+import { agent, bus, route, seat, seatHold, trip, tripSeatState } from "@/db/schema";
 import { writeAudit } from "@/server/audit";
 
-export const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES ?? 10);
+/**
+ * How long seats stay reserved before returning to the pool.
+ *
+ * 30 minutes rather than the 10 an at-the-counter flow would need: an agent is
+ * expected to park a reservation, serve other customers, and confirm once the
+ * customer's payment lands. Two extensions are allowed on top, so a genuinely
+ * slow payment can be held for 90 minutes before the seats free up.
+ */
+export const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES ?? 30);
 export const MAX_EXTENSIONS = 2;
 
 export class SeatConflictError extends Error {
@@ -400,4 +408,116 @@ export async function resolveSeatNumbers(
     found: wanted.map((n) => byNumber.get(n)).filter((r): r is NonNullable<typeof r> => !!r),
     unknown: wanted.filter((n) => !byNumber.has(n)),
   };
+}
+
+/* ─────────────────── parked reservations ─────────────────── */
+
+export interface ActiveHoldRow {
+  holdId: string;
+  tripId: string;
+  agentId: string;
+  agentName: string;
+  expiresAt: Date;
+  extensionCount: number;
+  provisionalName: string | null;
+  provisionalPhone: string | null;
+  createdAt: Date;
+  seatNumbers: string[];
+  seatIds: string[];
+  serviceDate: string;
+  direction: "ONWARD" | "RETURN";
+  departureAt: Date;
+  origin: string;
+  destination: string;
+  busName: string;
+  isMine: boolean;
+}
+
+/**
+ * Live reservations, for the "parked bookings" tray.
+ *
+ * A hold is deliberately not tied to one screen: an agent can reserve seats for
+ * a customer who is arranging payment, serve the next person in the queue, and
+ * come back to confirm. The hold lives in the database, so it survives page
+ * navigation, a refresh, or a different browser tab.
+ */
+export async function listActiveHolds(
+  viewerAgentId: string, opts: { mineOnly?: boolean } = {},
+): Promise<ActiveHoldRow[]> {
+  const conditions = [
+    eq(seatHold.status, "ACTIVE"),
+    sql`${seatHold.expiresAt} > now()`,
+  ];
+  if (opts.mineOnly) conditions.push(eq(seatHold.agentId, viewerAgentId));
+
+  const rows = await db
+    .select({
+      holdId: seatHold.id,
+      tripId: seatHold.tripId,
+      agentId: seatHold.agentId,
+      agentName: agent.name,
+      expiresAt: seatHold.expiresAt,
+      extensionCount: seatHold.extensionCount,
+      provisionalName: seatHold.provisionalName,
+      provisionalPhone: seatHold.provisionalPhone,
+      createdAt: seatHold.createdAt,
+      serviceDate: trip.serviceDate,
+      direction: trip.direction,
+      departureAt: trip.departureAt,
+      origin: route.origin,
+      destination: route.destination,
+      busName: bus.displayName,
+      seatNumbers: sql<string[]>`coalesce((
+        select array_agg(s.seat_number order by s.sort_order)
+        from ${tripSeatState} tss join ${seat} s on s.id = tss.seat_id
+        where tss.hold_id = ${seatHold.id} and tss.status = 'HELD'
+      ), '{}')`,
+      seatIds: sql<string[]>`coalesce((
+        select array_agg(tss.seat_id::text order by tss.seat_id)
+        from ${tripSeatState} tss
+        where tss.hold_id = ${seatHold.id} and tss.status = 'HELD'
+      ), '{}')`,
+    })
+    .from(seatHold)
+    .innerJoin(agent, eq(agent.id, seatHold.agentId))
+    .innerJoin(trip, eq(trip.id, seatHold.tripId))
+    .innerJoin(route, eq(route.id, trip.routeId))
+    .innerJoin(bus, eq(bus.id, trip.busId))
+    .where(and(...conditions))
+    .orderBy(seatHold.expiresAt);
+
+  return rows
+    // a hold whose seats were all force-released is a shell; don't show it
+    .filter((r) => (r.seatNumbers ?? []).length > 0)
+    .map((r) => ({
+      ...r,
+      expiresAt: new Date(r.expiresAt),
+      createdAt: new Date(r.createdAt),
+      departureAt: new Date(r.departureAt),
+      seatNumbers: r.seatNumbers ?? [],
+      seatIds: r.seatIds ?? [],
+      isMine: r.agentId === viewerAgentId,
+    }));
+}
+
+/** One live hold, for resuming a parked booking. */
+export async function getActiveHold(
+  holdId: string, viewerAgentId: string,
+): Promise<ActiveHoldRow | null> {
+  const all = await listActiveHolds(viewerAgentId);
+  return all.find((h) => h.holdId === holdId) ?? null;
+}
+
+/** Attach or update the customer hint on a parked hold. */
+export async function setHoldProvisional(p: {
+  holdId: string; agentId: string;
+  provisionalName?: string | null; provisionalPhone?: string | null;
+}): Promise<void> {
+  await db.update(seatHold).set({
+    provisionalName: p.provisionalName?.trim() || null,
+    provisionalPhone: p.provisionalPhone?.trim() || null,
+  }).where(and(
+    eq(seatHold.id, p.holdId),
+    eq(seatHold.status, "ACTIVE"),
+  ));
 }

@@ -9,10 +9,10 @@
  */
 import {
   makeFixture, seatCounts, findDoubleSells, findSeatsOnMultipleBookings,
-  cleanup, shutdown, check, heading, report,
+  cleanup, shutdown, check, heading, report, assertSafeDatabase,
 } from "./harness";
 import {
-  createHold, releaseHold, expireStaleHolds, getTripSeatStates,
+  createHold, expireStaleHolds, getTripSeatStates,
   SeatConflictError, HoldError,
 } from "../../src/server/services/seat-hold";
 import { confirmBooking, cancelBooking } from "../../src/server/services/booking";
@@ -252,6 +252,7 @@ async function ct8() {
 }
 
 async function main() {
+  assertSafeDatabase();
   console.log("\x1b[1mConcurrency suite — SRS §5.5\x1b[0m");
   console.log(`database: ${process.env.DATABASE_URL?.replace(/:[^:@]*@/, ":***@")}`);
 
@@ -267,7 +268,7 @@ async function main() {
 }
 
 main().catch(async (e) => {
-  console.error("\n\x1b[31mharness failure\x1b[0m", e);
-  await shutdown();
+  console.error(`\n\x1b[31m${e instanceof Error ? e.message : e}\x1b[0m`);
+  await shutdown().catch(() => {});
   process.exit(1);
 });
