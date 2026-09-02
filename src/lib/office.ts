@@ -2,10 +2,10 @@
  * Operator identity printed on every ticket.
  *
  * These live in the environment rather than the database because they change
- * roughly never, and a wrong phone number on a printed ticket is the kind of
- * thing that should require a deploy rather than a stray click in an admin
- * screen. Defaults are deliberately obvious placeholders so an unconfigured
- * deployment is caught at the first print, not by a customer.
+ * roughly never, and a wrong phone number on a stack of printed tickets should
+ * require a deploy rather than a stray click in an admin screen. Defaults are
+ * deliberately obvious placeholders so an unconfigured deployment is caught at
+ * the first print, not by a customer.
  */
 export interface OfficeDetails {
   name: string;
@@ -15,6 +15,7 @@ export interface OfficeDetails {
   address: string | null;
   email: string | null;
   gstin: string | null;
+  /** short clauses, printed as one line on a compact ticket */
   terms: string[];
 }
 
@@ -28,10 +29,11 @@ export function getOfficeDetails(): OfficeDetails {
     email: process.env.OFFICE_EMAIL || null,
     gstin: process.env.OFFICE_GSTIN || null,
     terms: (process.env.OFFICE_TERMS ||
-      "Report at the boarding point 15 minutes before departure." +
-      "|Carry a photo ID; it may be checked before boarding." +
-      "|Tickets are non-transferable. Cancellation charges apply as per office policy." +
-      "|The operator is not responsible for luggage left unattended."
+      "Report 15 min before departure|Carry photo ID|Non-transferable"
     ).split("|").map((t) => t.trim()).filter(Boolean),
   };
+}
+
+export function contactLine(o: OfficeDetails): string {
+  return [o.phone, o.altPhone].filter(Boolean).join(" / ");
 }

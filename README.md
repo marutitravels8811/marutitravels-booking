@@ -37,17 +37,28 @@ status table in `docs/PLAN.md`.
 | `/tickets/<bookingId>` | One ticket. Linked from every row in Bookings and from the booking confirmation. |
 | `/trips/<tripId>/tickets` | Every live ticket on a trip, ordered by seat so the stack matches the passenger chart. Linked from the trip card. |
 
-Three formats, switchable on the page before printing:
+Four formats, switchable on the page before printing:
 
-- **A4, 2 per page** — the office default, halves the paper on a batch.
-- **A5, 1 per page** — one ticket per sheet, larger text.
-- **Thermal 80mm** — for a counter receipt printer.
+| Format | Per A4 sheet | Use |
+|---|---|---|
+| **A4 · 8 per page** | 8 | Default. Two columns, four rows of 64mm. |
+| **A4 · 4 per page** | 4 | Full-width strips, larger type, easier to tear. |
+| **A5 · 1 per page** | 1 | Full detail including the per-berth breakdown. |
+| **Thermal 80mm** | 1 | Counter receipt printer. |
 
-A ticket carries the operator header, ticket number, route, date and departure,
-bus and registration, passenger and mobile, pickup and drop, every berth with
-its type and fare, the total, payment method and status (with the amount still
-to collect when unpaid), who booked it and when, and the printed terms.
-Cancelled bookings print with a CANCELLED watermark.
+Every ticket carries the operator name and phone, ticket number, route, date and
+departure, bus and registration, passenger and mobile, pickup and drop, the seat
+numbers, the total, the payment method, who booked it and when — and, when money
+is still owed, **"₹1,200 TO COLLECT"** in red so the conductor cannot miss it.
+
+The dense A4 formats drop the postal address, the per-berth fare table and the
+terms: a passenger at the boarding point does not need them, and they are what
+stands between four tickets a sheet and eight. Cancelled bookings print with a
+CANCELLED watermark.
+
+Sizing is driven by CSS keyed off the sheet's format rather than a React prop,
+because the format toggle is client state while the ticket is rendered on the
+server — switching from 8-up to A5 has to restyle without a re-render.
 
 Set the operator header in the environment — `OFFICE_NAME`, `OFFICE_PHONE`,
 `OFFICE_ADDRESS`, `OFFICE_GSTIN` and `OFFICE_TERMS`. They default to obvious

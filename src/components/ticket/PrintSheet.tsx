@@ -1,44 +1,68 @@
 "use client";
 
 import { useState } from "react";
-import { Printer, FileText, Receipt, Layers } from "lucide-react";
+import { Printer, Grid2x2, Rows3, FileText, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type PrintFormat = "a4-2up" | "a5" | "thermal";
+export type PrintFormat = "a4-8up" | "a4-4up" | "a5" | "thermal";
 
-const FORMATS: { id: PrintFormat; label: string; hint: string; icon: React.ReactNode }[] = [
-  { id: "a4-2up", label: "A4 · 2 per page", hint: "Office default — saves paper on a batch",
-    icon: <Layers size={14} /> },
-  { id: "a5", label: "A5 · 1 per page", hint: "One ticket per sheet, larger text",
+export const COMPACT_FORMATS: PrintFormat[] = ["a4-8up", "a4-4up"];
+
+const FORMATS: {
+  id: PrintFormat; label: string; perPage: string; hint: string;
+  icon: React.ReactNode;
+}[] = [
+  { id: "a4-8up", label: "A4 · 8 per page", perPage: "8",
+    hint: "Two columns, four rows. Most tickets per sheet.",
+    icon: <Grid2x2 size={14} /> },
+  { id: "a4-4up", label: "A4 · 4 per page", perPage: "4",
+    hint: "Full-width strips, roomier to read and tear.",
+    icon: <Rows3 size={14} /> },
+  { id: "a5", label: "A5 · 1 per page", perPage: "1",
+    hint: "One ticket with the full berth breakdown.",
     icon: <FileText size={14} /> },
-  { id: "thermal", label: "Thermal 80mm", hint: "Counter receipt printer",
+  { id: "thermal", label: "Thermal 80mm", perPage: "1",
+    hint: "Counter receipt printer.",
     icon: <Receipt size={14} /> },
 ];
 
+const PER_PAGE: Record<PrintFormat, number> = {
+  "a4-8up": 8, "a4-4up": 4, a5: 1, thermal: 1,
+};
+
 /**
- * Wraps tickets in the sheet that print.css targets.
+ * Wraps tickets in the sheet that the print stylesheet targets.
  *
- * The format lives on a data attribute rather than in JS-generated styles so
- * the page-break rules stay in the stylesheet where the browser's print engine
- * can apply them; switching format is a single attribute change with no
- * re-layout of the ticket markup itself.
+ * The format is a data attribute rather than JS-generated styles so the
+ * page-break rules stay in the stylesheet, where the browser's print engine
+ * can actually apply them.
  */
 export function PrintSheet({
-  children, count, subtitle, defaultFormat = "a4-2up",
+  children, count, subtitle, defaultFormat = "a4-8up", onFormatChange,
 }: {
   children: React.ReactNode;
   count: number;
   subtitle: string;
   defaultFormat?: PrintFormat;
+  onFormatChange?: (f: PrintFormat) => void;
 }) {
   const [format, setFormat] = useState<PrintFormat>(defaultFormat);
+  const sheets = Math.ceil(count / PER_PAGE[format]);
+
+  function pick(f: PrintFormat) {
+    setFormat(f);
+    onFormatChange?.(f);
+  }
 
   return (
     <>
-      <div className="no-print mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
+      <div className="no-print mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
         <div className="mr-auto">
           <p className="text-sm font-semibold text-ink-900">
-            {count} {count === 1 ? "ticket" : "tickets"} ready to print
+            {count} {count === 1 ? "ticket" : "tickets"}
+            <span className="ml-1.5 font-normal text-ink-500">
+              on {sheets} {sheets === 1 ? "sheet" : "sheets"}
+            </span>
           </p>
           <p className="text-xs text-ink-500">{subtitle}</p>
         </div>
@@ -46,7 +70,7 @@ export function PrintSheet({
         <fieldset className="flex flex-wrap gap-1.5">
           <legend className="sr-only">Paper format</legend>
           {FORMATS.map((f) => (
-            <button key={f.id} type="button" onClick={() => setFormat(f.id)}
+            <button key={f.id} type="button" onClick={() => pick(f.id)}
               title={f.hint} aria-pressed={format === f.id}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition",
@@ -66,12 +90,16 @@ export function PrintSheet({
       </div>
 
       <p className="no-print mb-3 text-xs text-ink-500">
-        {format === "a4-2up" && "Two tickets per A4 sheet. Set your printer to A4 portrait and margins to Default."}
-        {format === "a5" && "One ticket per sheet. Choose A5 in the printer dialog, or A4 with scaling."}
-        {format === "thermal" && "Sized for an 80mm roll. Pick your receipt printer and set paper to 80mm."}
+        {FORMATS.find((f) => f.id === format)?.hint}{" "}
+        {format.startsWith("a4")
+          ? "Set the printer to A4 portrait with default margins, and turn off any “fit to page” scaling."
+          : format === "a5"
+          ? "Choose A5 in the printer dialog, or A4 with scaling."
+          : "Pick your receipt printer and set paper width to 80mm."}
       </p>
 
-      <div className="print-sheet flex flex-col items-center gap-4" data-print-format={format}>
+      <div className="print-sheet mx-auto flex w-full flex-col items-center gap-3"
+        data-print-format={format}>
         {children}
       </div>
     </>

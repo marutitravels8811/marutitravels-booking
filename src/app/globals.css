@@ -65,89 +65,229 @@ html, body {
 }
 
 /* ──────────────────────── printing ────────────────────────
-   Three formats, chosen by data-print-format on the sheet:
-     a4-2up   two tickets per A4 page, the office default
-     a5       one ticket per A5 page
-     thermal  80mm roll, for a counter receipt printer
-   Screen shows the same markup so what you see is what prints. */
+   A4 is what the office printer takes, so the goal is fitting as many
+   tickets on a sheet as stay readable. Usable area at 8mm margins is
+   194 x 281mm.
 
-.print-sheet { --ticket-w: 190mm; }
-.print-sheet[data-print-format="a5"]      { --ticket-w: 190mm; }
-.print-sheet[data-print-format="thermal"] { --ticket-w: 74mm; }
+     a4-8up   2 columns x 4 rows, 95 x 68mm each   maximum density
+     a4-4up   1 column  x 4 rows, 194 x 68mm each  roomier, full width
+     a5       one per A5 sheet, with the berth breakdown
+     thermal  80mm roll
+
+   Screen shows the same markup, so what you see is what prints. */
+
+.print-sheet { --tw: 190mm; }
+.print-sheet[data-print-format="a4-8up"] { --tw: 95mm; }
+.print-sheet[data-print-format="a4-4up"] { --tw: 190mm; }
+.print-sheet[data-print-format="a5"]     { --tw: 140mm; }
+.print-sheet[data-print-format="thermal"]{ --tw: 74mm; }
 
 .ticket {
   width: 100%;
-  max-width: var(--ticket-w);
+  max-width: var(--tw);
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-@media print {
-  /* the app chrome never reaches paper */
-  .no-print, nav, aside, header.app-bar { display: none !important; }
+/* the dense formats lay out as a grid on screen too, so the preview
+   matches the sheet that comes out of the printer */
+.print-sheet[data-print-format="a4-8up"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 194mm;
+}
+.print-sheet[data-print-format="a4-8up"] .ticket { min-height: 64mm; }
+.print-sheet[data-print-format="a4-4up"] .ticket { min-height: 64mm; }
 
-  html, body {
-    background: #fff !important;
-    margin: 0;
-    padding: 0;
-  }
+@media print {
+  /* app chrome never reaches paper */
+  .no-print, nav, aside { display: none !important; }
+
+  html, body { background: #fff !important; margin: 0; padding: 0; }
 
   .print-sheet {
     margin: 0;
     padding: 0;
-    gap: 0 !important;
+    gap: 3mm !important;
     background: #fff;
+    max-width: none !important;
+    width: 100%;
   }
 
   .ticket {
     max-width: none;
-    border: 1px dashed #94a3b8 !important;
+    border: 1px dashed #64748b !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     background: #fff !important;
   }
 
-  /* two tickets per A4 sheet: each gets half the printable height */
-  .print-sheet[data-print-format="a4-2up"] .ticket {
-    height: 138mm;
+  /* 2 x 4 on a sheet */
+  .print-sheet[data-print-format="a4-8up"] {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 64mm;
+  }
+  .print-sheet[data-print-format="a4-8up"] .ticket {
+    height: 64mm;
+    min-height: 0;
     overflow: hidden;
   }
-  .print-sheet[data-print-format="a4-2up"] .ticket:nth-child(2n) {
+  .print-sheet[data-print-format="a4-8up"] .ticket:nth-child(8n) {
     break-after: page;
     page-break-after: always;
   }
-  .print-sheet[data-print-format="a4-2up"] .ticket:last-child {
-    break-after: auto;
-    page-break-after: auto;
-  }
 
-  .print-sheet[data-print-format="a5"] .ticket {
+  /* 1 x 4 on a sheet */
+  .print-sheet[data-print-format="a4-4up"] .ticket {
+    height: 64mm;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .print-sheet[data-print-format="a4-4up"] .ticket:nth-child(4n) {
     break-after: page;
     page-break-after: always;
   }
-  .print-sheet[data-print-format="a5"] .ticket:last-child {
-    break-after: auto;
-    page-break-after: auto;
-  }
 
+  .print-sheet[data-print-format="a5"] .ticket,
   .print-sheet[data-print-format="thermal"] .ticket {
-    border: none !important;
     break-after: page;
     page-break-after: always;
   }
-  .print-sheet[data-print-format="thermal"] .ticket:last-child {
-    break-after: auto;
-    page-break-after: auto;
+  .print-sheet[data-print-format="thermal"] .ticket { border: none !important; }
+
+  /* a trailing page break would eject a blank sheet */
+  .print-sheet .ticket:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
 
   /* keep ink light and text black regardless of the screen palette */
   .ticket * { color: #000 !important; }
   .ticket .muted { color: #444 !important; }
+  .ticket .text-red-700 { color: #b91c1c !important; }
   .ticket .band {
-    background: #f1f5f9 !important;
+    background: #e8edf3 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 }
 
 @page { size: A4 portrait; margin: 8mm; }
+
+/* ─────────────────── the ticket itself ───────────────────
+   Sizing lives here rather than in the component so switching paper format
+   (client state) restyles a server-rendered ticket with no re-render. */
+
+.ticket {
+  --fs: 11px;      /* body */
+  --fs-lg: 13px;   /* operator, route, total */
+  --fs-sm: 9px;    /* secondary lines */
+  --fs-xs: 7.5px;  /* footer */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 2.5mm 3mm;
+  border: 1px solid #64748b;
+  border-radius: 3px;
+  background: #fff;
+  color: #0f172a;
+  font-size: var(--fs);
+  line-height: 1.25;
+}
+
+.t-void {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  transform: rotate(-12deg);
+  font-size: 1.6em; font-weight: 900; letter-spacing: .15em;
+  color: #dc2626; opacity: .28;
+}
+
+.t-head {
+  display: flex; align-items: baseline; gap: .4em;
+  padding-bottom: .3em; border-bottom: 1px solid #cbd5e1;
+}
+.t-op { font-size: var(--fs-lg); font-weight: 900; text-transform: uppercase;
+        letter-spacing: -.01em; white-space: nowrap; }
+.t-contact { font-size: var(--fs-xs); color: #475569; min-width: 0;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-pnr { margin-left: auto; font-family: var(--font-mono); font-weight: 700;
+         font-size: var(--fs-lg); letter-spacing: .05em; white-space: nowrap; }
+
+.t-band {
+  display: flex; align-items: baseline; justify-content: space-between; gap: .5em;
+  margin: .35em -3mm 0; padding: .3em 3mm; background: #e8edf3;
+}
+.t-route { font-size: var(--fs-lg); font-weight: 700; min-width: 0;
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-arrow { font-weight: 400; }
+.t-when { font-size: var(--fs-lg); font-weight: 700; white-space: nowrap;
+          font-variant-numeric: tabular-nums; }
+
+.t-main { display: flex; align-items: flex-start; justify-content: space-between;
+          gap: .6em; margin-top: .35em; }
+.t-who { min-width: 0; }
+.t-name { font-size: var(--fs-lg); font-weight: 700; overflow: hidden;
+          text-overflow: ellipsis; white-space: nowrap; }
+.t-sub { font-size: var(--fs-sm); color: #334155; overflow: hidden;
+         text-overflow: ellipsis; white-space: nowrap; }
+.t-seatbox { text-align: right; flex-shrink: 0; }
+.t-seatlabel { font-size: var(--fs-xs); text-transform: uppercase;
+               letter-spacing: .12em; color: #64748b; }
+.t-seats { font-size: calc(var(--fs-lg) * 1.15); font-weight: 900;
+           letter-spacing: .03em; }
+
+.t-stops { margin-top: .2em; font-size: var(--fs-sm); color: #334155;
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-dim { color: #64748b; }
+.t-strong { font-weight: 700; }
+.t-right { text-align: right; }
+.t-note { margin-top: .2em; font-size: var(--fs-xs); font-style: italic;
+          color: #475569; overflow: hidden; text-overflow: ellipsis;
+          white-space: nowrap; }
+
+.t-detail { width: 100%; margin-top: .4em; font-size: var(--fs-sm);
+            border-collapse: collapse; }
+.t-detail th { text-align: left; font-weight: 500; color: #64748b;
+               border-bottom: 1px solid #e2e8f0; padding: .15em 0; }
+.t-detail td { padding: .15em 0; border-bottom: 1px solid #f1f5f9; }
+.t-detail tr:last-child td { border-bottom: 0; }
+.t-detail .t-right { text-align: right; font-variant-numeric: tabular-nums; }
+
+.t-money { display: flex; align-items: baseline; justify-content: space-between;
+           gap: .5em; margin-top: .35em; padding-top: .3em;
+           border-top: 1px solid #cbd5e1; }
+.t-pay { font-size: var(--fs-sm); font-weight: 600; }
+.t-paid { color: #047857; }
+.t-due { font-weight: 900; color: #b91c1c; }
+.t-total { font-size: calc(var(--fs-lg) * 1.15); font-weight: 900;
+           font-variant-numeric: tabular-nums; }
+
+.t-foot { display: flex; align-items: baseline; justify-content: space-between;
+          gap: .5em; margin-top: auto; padding-top: .25em;
+          font-size: var(--fs-xs); color: #64748b; }
+.t-terms { min-width: 0; overflow: hidden; text-overflow: ellipsis;
+           white-space: nowrap; }
+.t-by { flex-shrink: 0; white-space: nowrap; }
+
+/* dense A4 sheets drop what a passenger at the gate does not need */
+.print-sheet[data-print-format^="a4-"] .t-extra { display: none !important; }
+.print-sheet[data-print-format="a4-8up"] .ticket {
+  --fs: 9px; --fs-lg: 10.5px; --fs-sm: 8px; --fs-xs: 6.5px;
+  padding: 2mm 2.5mm;
+}
+.print-sheet[data-print-format="a4-8up"] .t-band { margin-left: -2.5mm; margin-right: -2.5mm; padding-left: 2.5mm; padding-right: 2.5mm; }
+.print-sheet[data-print-format="a4-4up"] .ticket {
+  --fs: 11px; --fs-lg: 13px; --fs-sm: 9.5px; --fs-xs: 7.5px;
+}
+.print-sheet[data-print-format="a5"] .ticket {
+  --fs: 12px; --fs-lg: 15px; --fs-sm: 10px; --fs-xs: 8.5px;
+  padding: 4mm;
+}
+.print-sheet[data-print-format="thermal"] .ticket {
+  --fs: 11px; --fs-lg: 12px; --fs-sm: 9px; --fs-xs: 7.5px;
+  padding: 2mm;
+}
