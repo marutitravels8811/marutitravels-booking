@@ -20,7 +20,7 @@ export default async function EditRoutePage({
     .orderBy(boardingPoint.kind, boardingPoint.sequence);
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <Link href="/masters/routes"
         className="mb-3 inline-flex items-center gap-1 text-xs text-ink-500 hover:text-ink-800">
         <ChevronLeft size={14} /> Routes

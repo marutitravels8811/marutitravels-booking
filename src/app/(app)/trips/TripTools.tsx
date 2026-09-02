@@ -14,7 +14,7 @@ export function TripTools({ routes, buses, date }: {
   const [open, setOpen] = useState<"adhoc" | "generate" | null>(null);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button type="button" onClick={() => setOpen("generate")}
         className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50">
         <Wand2 size={15} /> Generate from schedule
@@ -39,7 +39,7 @@ function Dialog({ title, subtitle, onClose, children }: {
   title: string; subtitle?: string; onClose: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/30 p-4"
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/30 p-4 sm:items-center"
       role="dialog" aria-modal="true" aria-label={title}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-xl">

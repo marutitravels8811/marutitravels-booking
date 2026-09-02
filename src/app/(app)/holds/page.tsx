@@ -9,7 +9,7 @@ export default async function HoldsPage() {
   const rows = await listActiveHolds(session.agentId);
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <header className="mb-5">
         <h1 className="text-lg font-semibold text-ink-900">Reserved seats</h1>
         <p className="text-sm text-ink-500">

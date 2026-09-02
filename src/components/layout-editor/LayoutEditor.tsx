@@ -45,8 +45,8 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
     : layout.seats.filter((s) => s.isActive)) as unknown as SeatLike[];
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
-      <div className="flex flex-col gap-4">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="flex min-w-0 flex-col gap-4">
         {/* toolbar */}
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
           <button type="button" onClick={loadStandard} disabled={readOnly}
@@ -75,7 +75,7 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
           />
 
           <button type="button" onClick={() => setShowInactive((v) => !v)}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:bg-ink-50">
+            className="inline-flex items-center gap-1.5 sm:ml-auto rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:bg-ink-50">
             {showInactive ? <Eye size={14} /> : <EyeOff size={14} />}
             {showInactive ? "Showing disabled" : "Hiding disabled"}
           </button>
@@ -102,7 +102,7 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
       </div>
 
       {/* inspector */}
-      <aside className="flex flex-col gap-4">
+      <aside className="order-first flex flex-col gap-4 xl:order-none">
         <SummaryCard summary={summary} />
 
         {errors.length > 0 ? (

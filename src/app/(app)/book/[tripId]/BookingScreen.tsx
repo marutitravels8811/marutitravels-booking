@@ -17,6 +17,10 @@ import {
   confirmBookingAction, parkHoldAction,
 } from "./actions";
 import type { SeatStateRow } from "@/server/services/seat-hold";
+import {
+  toggleSeat as toggleSeatRule, addSeats as addSeatsRule, removeSeat,
+  type SplitPrompt,
+} from "@/lib/seat-selection";
 
 const POLL_MS = 3000;
 
@@ -83,6 +87,7 @@ export function BookingScreen({
   const [result, setResult] = useState<{ pnr: string; seatNumbers: string[]; amountTotalPaise: number } | null>(null);
   const [holdName, setHoldName] = useState("");
   const [holdPhone, setHoldPhone] = useState("");
+  const [splitPrompt, setSplitPrompt] = useState<SplitPrompt | null>(null);
 
   const seatById = new Map(seats.map((s) => [s.seatId, s]));
 
@@ -158,26 +163,21 @@ export function BookingScreen({
 
   function toggleSeat(seatId: string) {
     if (phase !== "SELECTING") return;
-    const row = seatById.get(seatId);
-    if (!row || row.status !== "AVAILABLE" || !row.isActive) return;
     setConflict([]);
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(seatId)) next.delete(seatId); else next.add(seatId);
-      return next;
-    });
+    const outcome = toggleSeatRule(seats, selected, seatId);
+    if (outcome.confirmSplit) { setSplitPrompt(outcome.confirmSplit); return; }
+    setSelected(outcome.selected);
   }
 
   function addSeatsByNumber(ids: string[]) {
     setConflict([]);
-    setSelected((prev) => {
-      const next = new Set(prev);
-      for (const id of ids) {
-        const row = seatById.get(id);
-        if (row && row.status === "AVAILABLE" && row.isActive) next.add(id);
-      }
-      return next;
-    });
+    setSelected((prev) => addSeatsRule(seats, prev, ids));
+  }
+
+  function confirmSplit() {
+    if (!splitPrompt) return;
+    setSelected((prev) => removeSeat(prev, splitPrompt.seatId));
+    setSplitPrompt(null);
   }
 
   function doHold() {
@@ -234,7 +234,7 @@ export function BookingScreen({
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_400px]">
-      <div className="flex flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-4">
         <TripBar trip={trip} />
 
         {error && (
@@ -270,7 +270,9 @@ export function BookingScreen({
         />
       </div>
 
-      <aside className="flex flex-col gap-4">
+      {/* on a phone the panel sits above the map: it holds the action, and the
+          map is a large scroll target that would otherwise bury it */}
+      <aside className="order-first flex flex-col gap-4 xl:order-none">
         {phase === "SELECTING" && (
           <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
             <h2 className="mb-3 text-sm font-semibold text-ink-800">Choose seats</h2>
@@ -278,7 +280,7 @@ export function BookingScreen({
 
             <div className="mt-4 border-t border-[var(--border)] pt-3">
               <SelectedList rows={selectedRows} fareOf={defaultFareFor}
-                onRemove={(id) => toggleSeat(id)} />
+                onRemove={toggleSeat} />
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[var(--border)] pt-3">
@@ -330,13 +332,54 @@ export function BookingScreen({
           />
         )}
       </aside>
+
+      {splitPrompt && (
+        <SplitSofaDialog
+          seatNumber={splitPrompt.seatNumber}
+          partnerNumber={splitPrompt.partnerNumber}
+          onCancel={() => setSplitPrompt(null)}
+          onConfirm={confirmSplit}
+        />
+      )}
+    </div>
+  );
+}
+
+function SplitSofaDialog({ seatNumber, partnerNumber, onCancel, onConfirm }: {
+  seatNumber: string; partnerNumber: string;
+  onCancel: () => void; onConfirm: () => void;
+}) {
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="split-title"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/40 p-4 sm:items-center"
+      onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-xl">
+        <h2 id="split-title" className="text-sm font-semibold text-ink-900">
+          Split this double sofa?
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink-600">
+          {seatNumber} and {partnerNumber} are the two halves of one double sofa.
+          Removing {seatNumber} sells {partnerNumber} on its own, so whoever books
+          it will share the sofa with a stranger.
+        </p>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onCancel}
+            className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-ink-700 transition hover:bg-ink-50">
+            Keep both
+          </button>
+          <button type="button" onClick={onConfirm} autoFocus
+            className="rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700">
+            Sell {partnerNumber} alone
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 function TripBar({ trip }: { trip: TripHeader }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-3 sm:px-4">
       <div>
         <h1 className="text-sm font-semibold text-ink-900">
           {trip.origin} → {trip.destination}

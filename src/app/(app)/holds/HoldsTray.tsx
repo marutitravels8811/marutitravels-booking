@@ -102,7 +102,7 @@ function Section({
     <section>
       <h2 className="text-sm font-semibold text-ink-800">{title}</h2>
       <p className="mb-3 text-xs text-ink-500">{subtitle}</p>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         {holds.map((h) => (
           <article key={h.holdId}
             className={cn(

@@ -3,13 +3,13 @@ import { sql } from "drizzle-orm";
 import { Bus, Ticket, CalendarRange } from "lucide-react";
 import { db } from "@/db";
 import { bus, booking, trip } from "@/db/schema";
-import { getSession } from "@/server/auth";
+import { getVerifiedSession } from "@/server/auth";
 import { serviceDateOf } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const session = await getSession();
+  const session = await getVerifiedSession();
   const today = serviceDateOf();
 
   const [counts] = await db.select({
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <h1 className="text-lg font-semibold text-ink-900">
         Good day, {session?.name.split(" ")[0]}
       </h1>

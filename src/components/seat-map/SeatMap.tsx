@@ -58,7 +58,7 @@ export function SeatMap<T extends SeatLike>({
         />
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 xl:grid-cols-2">
         {(["LOWER", "UPPER"] as const).map((deck) => (
           <DeckPanel
             key={deck}
@@ -85,10 +85,11 @@ function DeckPanel<T extends SeatLike>({
 } & Pick<SeatMapProps<T>,
   "stateOf" | "titleOf" | "onSeatClick" | "onEmptyCellClick" | "disabledSeat" | "highlightKeys" | "compact">) {
   const grid = buildGrid(seats, deck, rows, cols);
-  const size = compact ? "h-9" : "h-12";
+  // 44px is the minimum comfortable touch target; the desktop size is larger
+  const size = compact ? "h-10 sm:h-9" : "h-12";
 
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4">
       <header className="mb-3 flex items-baseline justify-between">
         <h3 className="text-sm font-semibold text-ink-800">{label}</h3>
         <span className="text-xs text-ink-500">{sublabel}</span>
@@ -101,15 +102,15 @@ function DeckPanel<T extends SeatLike>({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
+      <div className="-mx-1 flex flex-col gap-1.5 overflow-x-auto px-1 pb-1">
         {grid.map((row, r) => (
-          <div key={r} className="flex gap-1.5">
+          <div key={r} className="flex min-w-64 gap-1 sm:gap-1.5">
             {row.map((cell) => {
               if (!cell.seat) {
                 if (cell.isAisle) {
                   return (
                     <div key={cell.colIndex}
-                      className={cn("w-7 shrink-0", size)}
+                      className={cn("w-5 shrink-0 sm:w-7", size)}
                       aria-hidden />
                   );
                 }
@@ -202,7 +203,7 @@ export function Legend() {
           {label}
         </span>
       ))}
-      <span className="ml-auto flex items-center gap-2 text-ink-500">
+      <span className="flex items-center gap-2 text-ink-500 sm:ml-auto">
         <span className="inline-flex h-4 w-9 items-center">
           <span className="h-4 w-4 rounded-l border-2 border-ink-300 bg-white" />
           <span className="z-10 -mx-[5px] h-2.5 w-2.5 rounded-full border-2 border-ink-300 bg-white" />

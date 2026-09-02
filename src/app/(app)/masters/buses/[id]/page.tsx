@@ -29,7 +29,7 @@ export default async function EditBusPage({
     : [undefined];
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <Link href="/masters/buses"
         className="mb-3 inline-flex items-center gap-1 text-xs text-ink-500 hover:text-ink-800">
         <ChevronLeft size={14} /> Buses

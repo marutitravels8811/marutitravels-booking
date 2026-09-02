@@ -45,6 +45,23 @@ export async function destroySession(): Promise<void> {
   (await cookies()).delete(COOKIE);
 }
 
+/**
+ * Clear the cookie if the surrounding context allows it.
+ *
+ * Next only permits cookie writes inside a Server Action or Route Handler, so
+ * a page render cannot delete a stale cookie. That is fine: the session fails
+ * verification on every request either way, and the user lands on the login
+ * screen, where signing in overwrites it. Tidying up is a nicety, not a
+ * requirement, so a refusal here is swallowed deliberately.
+ */
+async function tryDestroySession(): Promise<void> {
+  try {
+    await destroySession();
+  } catch {
+    // read-only context — the redirect to /login still happens
+  }
+}
+
 export async function getSession(): Promise<Session | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
@@ -60,9 +77,35 @@ export async function getSession(): Promise<Session | null> {
   }
 }
 
-/** Throws if not signed in. Use at the top of every server action. */
-export async function requireSession(): Promise<Session> {
+/**
+ * The signed-in agent, confirmed to still exist and be active.
+ *
+ * A JWT stays valid until it expires, which means a session can outlive the
+ * account it names — the agent is deactivated, or the database is restored from
+ * a backup with different ids. Without this check the stale id reaches the
+ * database as a foreign key and surfaces as an unreadable constraint error
+ * halfway through a booking. Verifying here turns that into a clean sign-out.
+ */
+export async function getVerifiedSession(): Promise<Session | null> {
   const s = await getSession();
+  if (!s) return null;
+
+  const [row] = await db
+    .select({ id: agent.id, name: agent.name, email: agent.email,
+              isActive: agent.isActive })
+    .from(agent).where(eq(agent.id, s.agentId)).limit(1);
+
+  if (!row || !row.isActive) {
+    await tryDestroySession();
+    return null;
+  }
+  // trust the database over the token for display fields
+  return { agentId: row.id, name: row.name, email: row.email };
+}
+
+/** Throws if not signed in, or if the account no longer exists. */
+export async function requireSession(): Promise<Session> {
+  const s = await getVerifiedSession();
   if (!s) throw new Error("UNAUTHENTICATED");
   return s;
 }

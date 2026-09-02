@@ -67,7 +67,7 @@ export default async function BookingsPage({
     .limit(100);
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <header className="mb-5">
         <h1 className="text-lg font-semibold text-ink-900">Bookings</h1>
         <p className="text-sm text-ink-500">
@@ -75,8 +75,8 @@ export default async function BookingsPage({
         </p>
       </header>
 
-      <form className="mb-4 flex flex-wrap items-end gap-2">
-        <div className="min-w-56 flex-1">
+      <form className="mb-4 grid gap-2 sm:flex sm:flex-wrap sm:items-end">
+        <div className="sm:min-w-56 sm:flex-1">
           <label htmlFor="q" className="mb-1 block text-xs font-medium text-ink-700">Search</label>
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
@@ -85,15 +85,17 @@ export default async function BookingsPage({
               className="w-full rounded-lg border border-[var(--border)] py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
           </div>
         </div>
-        <div>
+        <div className="grid grid-cols-2 gap-2 sm:contents">
+          <div>
           <label htmlFor="from" className="mb-1 block text-xs font-medium text-ink-700">Travel from</label>
           <input id="from" name="from" type="date" defaultValue={sp.from}
-            className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-brand-500" />
-        </div>
-        <div>
+            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-brand-500" />
+          </div>
+          <div>
           <label htmlFor="to" className="mb-1 block text-xs font-medium text-ink-700">to</label>
           <input id="to" name="to" type="date" defaultValue={sp.to}
-            className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-brand-500" />
+            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-brand-500" />
+          </div>
         </div>
         <button type="submit"
           className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
@@ -113,7 +115,7 @@ export default async function BookingsPage({
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-          <table className="w-full min-w-4xl text-sm">
+          <table className="w-full min-w-[52rem] text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-left text-xs uppercase tracking-wide text-ink-500">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Ticket</th>

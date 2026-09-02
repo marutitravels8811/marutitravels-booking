@@ -65,7 +65,7 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
         <h2 className="mb-4 text-sm font-semibold text-ink-800">Bus details</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Registration number" error={fieldErrors.registrationNo}>
@@ -153,7 +153,7 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
         </p>
       )}
 
-      <div className="sticky bottom-0 flex items-center gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-5 py-3">
+      <div className="sticky bottom-0 z-20 flex flex-wrap items-center gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 sm:px-5">
         <button type="button" onClick={submit}
           disabled={pending || !layoutValid || !registrationNo || !displayName}
           className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-40">

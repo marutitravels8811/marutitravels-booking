@@ -82,7 +82,7 @@ export function RouteForm({ initial }: { initial?: RouteFormInitial }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
         <h2 className="mb-4 text-sm font-semibold text-ink-800">Route</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Code" error={fieldErrors.code}>
@@ -122,7 +122,7 @@ export function RouteForm({ initial }: { initial?: RouteFormInitial }) {
         const list = points.filter((p) => p.kind === kind);
         return (
           <section key={kind}
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-800">
                 <MapPin size={15} className="text-ink-400" />
@@ -143,7 +143,7 @@ export function RouteForm({ initial }: { initial?: RouteFormInitial }) {
               <div className="flex flex-col gap-2">
                 {list.map((p) => (
                   <div key={p.key}
-                    className="grid items-end gap-2 sm:grid-cols-[1fr_1.4fr_auto_auto]">
+                    className="grid items-end gap-2 rounded-lg border border-[var(--border)] p-2 sm:grid-cols-[1fr_1.4fr_auto_auto] sm:border-0 sm:p-0">
                     <Field label="Name">
                       <input value={p.name} onChange={(e) => patch(p.key, { name: e.target.value })}
                         placeholder="Bus stand" className={inputCls(false)} />

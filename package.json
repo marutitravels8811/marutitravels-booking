@@ -13,7 +13,9 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
     "typecheck": "tsc --noEmit",
-    "test:concurrency": "tsx tests/concurrency/run.ts"
+    "test:concurrency": "tsx tests/concurrency/run.ts",
+    "test:unit": "tsx tests/unit/seat-selection.ts",
+    "test": "pnpm test:unit && pnpm test:concurrency"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -32,7 +32,7 @@ export default async function TripsPage({
   ]);
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-ink-900">Trips</h1>
@@ -72,7 +72,7 @@ export default async function TripsPage({
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-3 xl:grid-cols-2">
           {trips.map((t) => {
             const sold = t.booked + t.held;
             const pct = Math.round((sold / Math.max(t.totalSeats, 1)) * 100);

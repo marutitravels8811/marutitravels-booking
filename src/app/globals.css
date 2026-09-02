@@ -40,6 +40,13 @@ html, body {
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  /* wide content scrolls inside its own container; the page never does */
+  overflow-x: hidden;
+}
+
+/* iOS zooms the page when a focused input is under 16px */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px; }
 }
 
 *, *::before, *::after { box-sizing: border-box; }

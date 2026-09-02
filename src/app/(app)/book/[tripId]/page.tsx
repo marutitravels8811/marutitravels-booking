@@ -60,7 +60,7 @@ export default async function BookTripPage({
 
   if (row.status !== "SCHEDULED") {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Back date={row.serviceDate} />
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-8 text-center">
           <p className="text-sm font-medium text-amber-900">
@@ -72,7 +72,7 @@ export default async function BookTripPage({
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <Back date={row.serviceDate} />
       <BookingScreen
         agentId={session.agentId}
