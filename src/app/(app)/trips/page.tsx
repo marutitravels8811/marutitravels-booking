@@ -7,6 +7,7 @@ import { listTripsForDate } from "@/server/services/trip";
 import { serviceDateOf, formatTime } from "@/lib/time";
 import { TripTools } from "./TripTools";
 import { DatePicker } from "./DatePicker";
+import { directionLabel, journeyLabel } from "@/lib/journey";
 
 export const dynamic = "force-dynamic";
 
@@ -66,9 +67,9 @@ export default async function TripsPage({
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold text-ink-900">
-                      {t.origin} → {t.destination}
+                      {journeyLabel(t.origin, t.destination, t.direction)}
                       <span className="ml-2 rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-ink-600">
-                        {t.direction === "ONWARD" ? "Onward" : "Return"}
+                        {directionLabel(t.direction)}
                       </span>
                     </h3>
                     <p className="mt-0.5 text-xs text-ink-500">

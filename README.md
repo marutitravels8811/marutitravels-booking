@@ -62,6 +62,14 @@ status table in `docs/PLAN.md`.
 A **schedule** is the standing pattern — Sleeper 1 leaves Rajkot at 21:00 every
 day, returns at 20:00. Manage them under **Schedules**.
 
+A route is stored once, in one direction — Rajkot → Mumbai. The return leg
+reuses that row with `direction = RETURN`, so **every screen shows the journey
+the way the bus actually travels**: a return trip reads "Mumbai → Rajkot", not
+the route as stored. That rule lives in `src/lib/journey.ts` and nothing
+displays a journey without it, so the screen and the printed ticket cannot
+disagree. The route's pickup and drop lists swap on the return leg for the same
+reason — the bus starts from the far end.
+
 A **trip** is one bus on one date, and it owns the seat inventory. Trips are
 materialised from schedules by "Generate trips" on the Trips screen, over a date
 range you choose. Generation is idempotent: re-running never duplicates, because

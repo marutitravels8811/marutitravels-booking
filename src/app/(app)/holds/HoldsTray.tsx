@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, RefreshCw, Timer, User } from "lucide-react";
 import { HoldTimer } from "@/app/(app)/book/[tripId]/HoldTimer";
 import { formatTime } from "@/lib/time";
+import { journeyLabel } from "@/lib/journey";
 import { cn } from "@/lib/utils";
 import {
   listHoldsAction, releaseHoldFromTrayAction, extendHoldFromTrayAction,
@@ -115,7 +116,7 @@ function Section({
                   {h.seatNumbers.join(", ")}
                 </p>
                 <p className="mt-0.5 text-xs text-ink-500">
-                  {h.origin} → {h.destination} · {h.serviceDate} · {formatTime(h.departureAt)}
+                  {journeyLabel(h.origin, h.destination, h.direction)} · {h.serviceDate} · {formatTime(h.departureAt)}
                 </p>
                 <p className="text-xs text-ink-500">{h.busName}</p>
               </div>

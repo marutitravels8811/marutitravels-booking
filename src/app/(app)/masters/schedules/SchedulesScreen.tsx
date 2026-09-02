@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { CalendarClock, Info, Loader2, Plus, Save } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { cn } from "@/lib/utils";
+import { directionLabel, journeyLabel } from "@/lib/journey";
 import { saveScheduleAction, setScheduleActiveAction, scheduleImpactAction } from "./actions";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -107,9 +108,9 @@ export function SchedulesScreen({
               <div className="mb-2 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate text-sm font-semibold text-ink-900">
-                    {s.origin} → {s.destination}
+                    {journeyLabel(s.origin, s.destination, s.direction)}
                     <span className="ml-2 rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-ink-600">
-                      {s.direction === "ONWARD" ? "Onward" : "Return"}
+                      {directionLabel(s.direction)}
                     </span>
                   </h3>
                   <p className="mt-0.5 truncate text-xs text-ink-500">

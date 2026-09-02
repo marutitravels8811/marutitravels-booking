@@ -1,6 +1,7 @@
 import { formatINR } from "@/lib/money";
 import { formatTime } from "@/lib/time";
 import { contactLine, type OfficeDetails } from "@/lib/office";
+import { journeyOf } from "@/lib/journey";
 import type { TicketData } from "@/server/services/ticket";
 
 const PAYMENT_LABEL: Record<TicketData["paymentType"], string> = {
@@ -46,6 +47,7 @@ export function Ticket({
   const due = ticket.amountTotalPaise - ticket.amountPaidPaise;
   const cancelled = ticket.status === "CANCELLED";
   const seatList = ticket.seats.map((s) => s.seatNumber).join(", ");
+  const journey = journeyOf(ticket.origin, ticket.destination, ticket.direction);
   const showBreakdown =
     ticket.seats.length > 1 || ticket.seats.some((s) => s.passengerName);
 
@@ -63,7 +65,7 @@ export function Ticket({
 
       <div className="t-band">
         <span className="t-route">
-          {ticket.origin} <span className="t-arrow">→</span> {ticket.destination}
+          {journey.from} <span className="t-arrow">→</span> {journey.to}
         </span>
         <span className="t-when">
           {shortDate(ticket.serviceDate)} · {formatTime(ticket.departureAt)}

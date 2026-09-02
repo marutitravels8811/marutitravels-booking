@@ -7,6 +7,7 @@ import {
 } from "@/db/schema";
 import { formatINR } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
+import { journeyLabel } from "@/lib/journey";
 
 export const dynamic = "force-dynamic";
 
@@ -145,7 +146,7 @@ export default async function BookingsPage({
                     <span className="block text-xs text-ink-500">{b.phone}</span>
                   </td>
                   <td className="px-4 py-3 text-xs text-ink-600">
-                    {b.origin} → {b.destination}
+                    {journeyLabel(b.origin, b.destination, b.direction)}
                     <span className="block text-ink-500">
                       {b.serviceDate} · {b.busName}
                     </span>

@@ -5,6 +5,7 @@ import { requireSession } from "@/server/auth";
 import { getTicketsForTrip, getTripHeader } from "@/server/services/ticket";
 import { getOfficeDetails } from "@/lib/office";
 import { formatTime } from "@/lib/time";
+import { journeyLabel, directionLabel } from "@/lib/journey";
 import { Ticket } from "@/components/ticket/Ticket";
 import { PrintSheet } from "@/components/ticket/PrintSheet";
 
@@ -45,12 +46,12 @@ export default async function TripTicketsPage({
 
       <header className="no-print mb-4">
         <h1 className="text-lg font-semibold text-ink-900">
-          Tickets · {header.origin} → {header.destination}
+          Tickets · {journeyLabel(header.origin, header.destination, header.direction)}
         </h1>
         <p className="text-sm text-ink-500">
           {header.serviceDate} · {formatTime(header.departureAt)} ·{" "}
           {header.busName} ({header.registrationNo}) ·{" "}
-          {header.direction === "ONWARD" ? "Onward" : "Return"}
+          {directionLabel(header.direction)}
         </p>
       </header>
 

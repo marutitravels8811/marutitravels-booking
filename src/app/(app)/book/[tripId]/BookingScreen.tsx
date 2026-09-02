@@ -18,6 +18,7 @@ import {
   confirmBookingAction, parkHoldAction,
 } from "./actions";
 import type { SeatStateRow } from "@/server/services/seat-hold";
+import { directionLabel, journeyLabel, pointKindsFor } from "@/lib/journey";
 import {
   toggleSeat as toggleSeatRule, addSeats as addSeatsRule, removeSeat,
   type SplitPrompt,
@@ -323,6 +324,7 @@ export function BookingScreen({
         {phase === "HELD" && hold && (
           <ConfirmPanel
             hold={hold} rows={selectedRows} points={points}
+            direction={trip.direction}
             initialName={customerHint.name} initialPhone={customerHint.phone}
             defaultFareFor={defaultFareFor}
             onRelease={doRelease}
@@ -387,9 +389,9 @@ function TripBar({ trip }: { trip: TripHeader }) {
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-3 sm:px-4">
       <div>
         <h1 className="text-sm font-semibold text-ink-900">
-          {trip.origin} → {trip.destination}
+          {journeyLabel(trip.origin, trip.destination, trip.direction)}
           <span className="ml-2 rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-ink-600">
-            {trip.direction === "ONWARD" ? "Onward" : "Return"}
+            {directionLabel(trip.direction)}
           </span>
         </h1>
         <p className="mt-0.5 text-xs text-ink-500">
@@ -476,12 +478,13 @@ function BookingDone({ result, onNew }: {
 /* ─────────────────── the customer + payment form ─────────────────── */
 
 function ConfirmPanel({
-  hold, rows, points, initialName, initialPhone,
+  hold, rows, points, direction, initialName, initialPhone,
   defaultFareFor, onRelease, onExtend, onExpired, onDone,
 }: {
   hold: { holdId: string; expiresAt: string; serverNow: string };
   rows: SeatStateRow[];
   points: PointOption[];
+  direction: "ONWARD" | "RETURN";
   initialName: string;
   initialPhone: string;
   defaultFareFor: (s: SeatStateRow) => number;
@@ -507,8 +510,12 @@ function ConfirmPanel({
   const [fares, setFares] = useState<Record<string, string>>(() =>
     Object.fromEntries(rows.map((r) => [r.seatId, String(defaultFareFor(r) / 100)])));
 
-  const pickups = points.filter((p) => p.kind === "BOARDING");
-  const drops = points.filter((p) => p.kind === "DROPPING");
+  // On the return leg the bus starts from the far end, so the route's two stop
+  // lists swap over — otherwise the counter offers Rajkot pickups for a bus
+  // leaving Mumbai.
+  const kinds = pointKindsFor(direction);
+  const pickups = points.filter((p) => p.kind === kinds.pickup);
+  const drops = points.filter((p) => p.kind === kinds.drop);
   const totalRupees = rows.reduce((t, r) => t + (Number(fares[r.seatId]) || 0), 0);
 
   function submit() {
