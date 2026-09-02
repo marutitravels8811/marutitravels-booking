@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bus Booking — Counter
 
-## Getting Started
+Internal seat reservation and ticketing for a bus operator's travel office.
+Staff ("agents") book on behalf of walk-in and phone customers. There is no
+public-facing booking portal.
 
-First, run the development server:
+Requirements and rationale live in [`docs/SRS.md`](docs/SRS.md).
+Stack decisions and the phased build plan live in [`docs/PLAN.md`](docs/PLAN.md).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## What works today
+
+- **Sign in** — email + password, httpOnly JWT session, 12-hour expiry.
+- **Bus management** — add and edit buses, each carrying its own seat layout.
+- **Seat layout engine** — generate the standard 38 sleeper + 5 cabin bus in one
+  click, then take full manual control: add, remove, renumber, retype or disable
+  any berth. Double sofas add, move and delete as a pair.
+- **Layout versioning** — once a trip uses a layout it freezes; saving edits
+  creates a new version, so tickets already printed keep matching the seats they
+  were sold against.
+- **Audit log** — append-only, records every state change with actor, timestamp,
+  IP and a before/after diff.
+
+Trips, the hold-then-confirm booking flow, reports and ticket printing are the
+next phases — see the status table in `docs/PLAN.md`.
+
+## The seat layout
+
+The bus this was built for:
+
+```
+CABIN        C1  C2  C3  C4  C5                    5 seats
+
+LOWER deck   row 1   L1   ·  L2A L3B               single + double
+             ...
+             row 5   L13  ·  L14A L15B
+             row 6   L16A L17B  L18A L19B          two doubles, no aisle
+
+UPPER deck   same shape, U1 … U19
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| | Units | Berths |
+|---|---|---|
+| Double sleeper sofas | 14 (7 per deck) | 28 |
+| Single sleeper sofas | 10 (5 per deck) | 10 |
+| Cabin seats | 5 | 5 |
+| **Total** | | **43** |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+None of this is hard-coded into the booking logic. The generator only seeds a
+starting point; every berth's number, type, deck and grid position stays
+editable, and other buses can have entirely different layouts.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+### 1. A database
 
-To learn more about Next.js, take a look at the following resources:
+**Local Postgres** (fastest for development):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+createdb bus_booking_dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Or Neon** (what production uses) — create a project at
+[neon.tech](https://neon.tech) and copy the **pooled** connection string.
 
-## Deploy on Vercel
+The DB client detects which one you gave it and picks the right driver. Both
+support the interactive transactions the seat-hold logic depends on.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 2. Environment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+cp .env.example .env.local
+```
+
+Then set `DATABASE_URL`, and generate a session secret:
+
+```bash
+openssl rand -base64 32
+```
+
+### 3. Migrate and seed
+
+```bash
+pnpm install
+pnpm db:migrate      # or: pnpm db:push  for a quick local sync
+pnpm db:seed         # first agent + a sample route and bus
+```
+
+The seed prints the login it created — `admin@office.local` / `changeme123`
+by default. Override with `SEED_EMAIL` / `SEED_PASSWORD` / `SEED_NAME`.
+**Change the password before this goes anywhere real.**
+
+### 4. Run
+
+```bash
+pnpm dev
+```
+
+Then open http://localhost:3000 and sign in.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `pnpm dev` | Development server |
+| `pnpm build` | Production build |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm lint` | ESLint |
+| `pnpm db:generate` | Generate a migration from schema changes |
+| `pnpm db:migrate` | Apply pending migrations |
+| `pnpm db:push` | Push the schema straight to the DB (development only) |
+| `pnpm db:studio` | Drizzle Studio — browse the data |
+| `pnpm db:seed` | Seed the first agent, a route and a bus |
+
+## A note on the database driver
+
+`src/db/index.ts` uses Neon's **WebSocket `Pool`**, deliberately not the HTTP
+`neon()` driver. The seat hold and booking-confirm paths depend on
+`BEGIN … SELECT FOR UPDATE … UPDATE … COMMIT` running in a single session. The
+HTTP driver cannot do interactive transactions, so switching to it would
+silently break the guarantee that a berth is never sold twice.
+
+Concurrency design in full: [`docs/SRS.md` §5](docs/SRS.md).
+
+## Deploying
+
+Push to GitHub, import the repo on Vercel, and set `DATABASE_URL`,
+`SESSION_SECRET`, `OFFICE_TIMEZONE` and `CRON_SECRET` as environment variables.
+Both Vercel and Neon have free tiers with far more headroom than a single office
+needs.
