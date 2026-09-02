@@ -45,8 +45,10 @@ Agents are deactivated, never deleted: bookings carry `created_by_agent_id`
 forever, so removing the row would erase who made a sale. The last active
 account cannot be deactivated.
 
-- **Trips** — routes with pickup and drop points, daily schedules, an idempotent
-  generator, and ad-hoc extra buses.
+- **Schedules** — the standing timetable: which bus leaves when, on which days.
+  Editable, pausable, and the source the trip generator works from.
+- **Trips** — routes with pickup and drop points, an idempotent generator, and
+  ad-hoc extra buses for days that need another departure.
 - **Booking** — seat map with live updates, manual seat-number entry, per-seat
   prices defaulted from the bus and editable, and cash / online / pay-later.
 - **Parked reservations** — hold seats, serve other customers, confirm later.
@@ -54,6 +56,25 @@ account cannot be deactivated.
 
 Reports and the driver's passenger chart are the remaining phases — see the
 status table in `docs/PLAN.md`.
+
+## Schedules and trips
+
+A **schedule** is the standing pattern — Sleeper 1 leaves Rajkot at 21:00 every
+day, returns at 20:00. Manage them under **Schedules**.
+
+A **trip** is one bus on one date, and it owns the seat inventory. Trips are
+materialised from schedules by "Generate trips" on the Trips screen, over a date
+range you choose. Generation is idempotent: re-running never duplicates, because
+`(bus, service_date, direction)` is unique.
+
+Editing a schedule changes **only what is generated from now on**. Trips that
+already exist keep the times they were created with, because tickets may have
+been printed against them — change or cancel those individually from Trips.
+Pausing a schedule stops future generation and leaves existing trips running.
+
+A bus cannot hold two schedules in the same direction on the same weekday; the
+form refuses it and names the clashing days, because one bus cannot make two
+outbound trips in one day.
 
 ## Printing tickets
 

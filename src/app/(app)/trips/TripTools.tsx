@@ -160,6 +160,10 @@ function GenerateDialog({ date, onClose }: { date: string; onClose: () => void }
           className="mt-1 inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-40">
           {pending && <Loader2 size={15} className="animate-spin" />} Generate
         </button>
+        <a href="/masters/schedules"
+          className="text-center text-xs text-brand-600 hover:underline">
+          Manage schedules
+        </a>
       </div>
     </Dialog>
   );
