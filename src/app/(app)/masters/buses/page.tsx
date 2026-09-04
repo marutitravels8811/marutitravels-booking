@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { desc, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Bus as BusIcon, Plus } from "lucide-react";
 import { db } from "@/db";
-import { bus, seat, seatLayout } from "@/db/schema";
+import { bus, seat, seatLayout, trip } from "@/db/schema";
+import { RemoveMasterButton } from "../RemoveMasterButton";
+import { removeBusAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ export default async function BusesPage() {
       isActive: bus.isActive,
       layoutVersion: seatLayout.version,
       layoutName: seatLayout.name,
+      futureTripCount: sql<number>`(select count(*)::int from ${trip} t where t.bus_id = ${bus.id} and t.status = 'SCHEDULED' and t.service_date >= to_char(current_date, 'YYYY-MM-DD'))`,
       seatCount: sql<number>`(
         select count(*)::int from ${seat}
         where ${seat.layoutId} = ${bus.currentLayoutId} and ${seat.isActive}
@@ -23,7 +26,7 @@ export default async function BusesPage() {
     })
     .from(bus)
     .leftJoin(seatLayout, eq(seatLayout.id, bus.currentLayoutId))
-    .orderBy(desc(bus.isActive), bus.displayName);
+    .where(eq(bus.isActive, true)).orderBy(bus.displayName);
 
   return (
     <div className="p-4 sm:p-6">
@@ -86,10 +89,11 @@ export default async function BusesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/masters/buses/${b.id}`}
-                      className="text-xs font-medium text-brand-600 hover:underline">
-                      Edit seating
-                    </Link>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link href={`/masters/buses/${b.id}`}
+                        className="text-xs font-medium text-brand-600 hover:underline">Edit seating</Link>
+                      <RemoveMasterButton label="bus" id={b.id} futureTripCount={b.futureTripCount} onRemove={removeBusAction} />
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -7,6 +7,8 @@ import { Alert } from "@/components/ui/Alert";
 import { cn } from "@/lib/utils";
 import { directionLabel, journeyLabel } from "@/lib/journey";
 import { saveScheduleAction, setScheduleActiveAction, scheduleImpactAction } from "./actions";
+import { removeScheduleAction } from "./actions";
+import { RemoveMasterButton } from "../RemoveMasterButton";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -20,6 +22,7 @@ export interface ScheduleView {
   validFrom: string; validTo: string | null;
   isActive: boolean;
   tripsGenerated: number;
+  futureTripCount: number;
   lastGeneratedDate: string | null;
 }
 export interface Option { id: string; label: string }
@@ -156,6 +159,7 @@ export function SchedulesScreen({
                   className="font-medium text-brand-600 hover:underline disabled:opacity-40">
                   Edit
                 </button>
+                <RemoveMasterButton label="schedule" id={s.id} futureTripCount={s.futureTripCount} onRemove={removeScheduleAction} />
                 <button type="button" disabled={pending}
                   onClick={() => toggleActive(s)}
                   className={cn("ml-auto font-medium hover:underline disabled:opacity-40",

@@ -39,7 +39,7 @@ export async function loginAction(
     return { error: "Email or password is incorrect." };
   }
 
-  redirect(mustChange ? "/change-password?first=1" : "/dashboard");
+  redirect(mustChange ? "/change-password?first=1" : "/trips");
 }
 
 export interface ForgotState { done?: boolean; error?: string }

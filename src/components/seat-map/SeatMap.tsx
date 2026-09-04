@@ -160,10 +160,11 @@ function DeckPanel<T extends SeatLike>({
                     isDouble && s.sofaPosition === "B" && "rounded-l-sm",
                   )}>
                   <span className="leading-none">{s.seatNumber}</span>
-                  <span className="text-[9px] font-medium leading-none opacity-60">
-                    {s.berthType === "SLEEPER_DOUBLE" ? "DBL" :
-                     s.berthType === "SLEEPER_SINGLE" ? "SGL" : "CAB"}
-                  </span>
+                  {state === "BOOKED" && s.customerName && (
+                    <span className="max-w-full truncate px-1 text-[9px] font-medium leading-none opacity-80">
+                      {s.customerName}
+                    </span>
+                  )}
                   {isDouble && s.sofaPosition === "A" && (
                     <span aria-hidden
                       className="absolute -right-[7px] top-1/2 z-10 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-[var(--sb)] bg-[var(--sc)]" />

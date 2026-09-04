@@ -15,6 +15,20 @@
       "when": 1788361468408,
       "tag": "0001_agents_and_password_reset",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788504715767,
+      "tag": "0002_bent_domino",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788505652821,
+      "tag": "0003_clean_power_man",
+      "breakpoints": true
     }
   ]
 }

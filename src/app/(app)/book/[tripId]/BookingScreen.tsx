@@ -42,6 +42,8 @@ export interface TripHeader {
   fareSingleSofaPaise: number;
   fareDoubleSofaPaise: number;
   fareCabinPaise: number;
+  extraPersonSinglePaise: number;
+  extraPersonDoublePaise: number;
 }
 
 export interface PointOption { id: string; name: string; kind: "BOARDING" | "DROPPING" }
@@ -78,17 +80,17 @@ export function BookingScreen({
     resume
       ? { holdId: resume.holdId, expiresAt: resume.expiresAt, serverNow: resume.serverNow }
       : null);
+  const [holdName, setHoldName] = useState("");
+  const [holdPhone, setHoldPhone] = useState("");
   /** the name typed when the seats were parked, pre-filled on return */
-  const [customerHint] = useState(() => ({
-    name: resume?.provisionalName ?? "",
-    phone: resume?.provisionalPhone ?? "",
-  }));
+  const customerHint = {
+    name: resume?.provisionalName ?? holdName,
+    phone: resume?.provisionalPhone ?? holdPhone,
+  };
   const [conflict, setConflict] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [result, setResult] = useState<{ bookingId: string; pnr: string; seatNumbers: string[]; amountTotalPaise: number } | null>(null);
-  const [holdName, setHoldName] = useState("");
-  const [holdPhone, setHoldPhone] = useState("");
   const [splitPrompt, setSplitPrompt] = useState<SplitPrompt | null>(null);
 
   const seatById = new Map(seats.map((s) => [s.seatId, s]));
@@ -155,7 +157,7 @@ export function BookingScreen({
     const row = seatById.get((s as unknown as SeatStateRow).seatId);
     if (!row) return s.seatNumber;
     const price = formatINR(defaultFareFor(row));
-    if (row.status === "BOOKED") return `${row.seatNumber} · booked`;
+    if (row.status === "BOOKED") return `${row.seatNumber} · booked · click to view booking`;
     if (row.status === "HELD" && row.heldByAgentName) {
       return `${row.seatNumber} · held by ${row.heldByAgentName}`;
     }
@@ -264,11 +266,19 @@ export function BookingScreen({
           stateOf={stateOf}
           titleOf={titleOf}
           onSeatClick={phase === "SELECTING"
-            ? (s) => toggleSeat((s as unknown as SeatStateRow).seatId)
+            ? (s) => {
+                const row = s as unknown as SeatStateRow;
+                if (row.status === "BOOKED" && row.bookingId) {
+                  router.push(`/tickets/${row.bookingId}`);
+                  return;
+                }
+                toggleSeat(row.seatId);
+              }
             : undefined}
           disabledSeat={(s) => {
             const row = seatById.get((s as unknown as SeatStateRow).seatId);
-            return phase !== "SELECTING" || !row || row.status !== "AVAILABLE" || !row.isActive;
+            return phase !== "SELECTING" || !row ||
+              (row.status !== "AVAILABLE" && row.status !== "BOOKED") || !row.isActive;
           }}
         />
       </div>
@@ -325,6 +335,8 @@ export function BookingScreen({
           <ConfirmPanel
             hold={hold} rows={selectedRows} points={points}
             direction={trip.direction}
+            extraPersonSinglePaise={trip.extraPersonSinglePaise}
+            extraPersonDoublePaise={trip.extraPersonDoublePaise}
             initialName={customerHint.name} initialPhone={customerHint.phone}
             defaultFareFor={defaultFareFor}
             onRelease={doRelease}
@@ -466,6 +478,10 @@ function BookingDone({ result, onNew }: {
           className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
           <Printer size={15} /> Print ticket
         </a>
+        <a href={`/bookings/${result.bookingId}/edit`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
+          Edit booking
+        </a>
         <a href="/holds"
           className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
           Reserved seats
@@ -478,13 +494,16 @@ function BookingDone({ result, onNew }: {
 /* ─────────────────── the customer + payment form ─────────────────── */
 
 function ConfirmPanel({
-  hold, rows, points, direction, initialName, initialPhone,
+  hold, rows, points, direction, extraPersonSinglePaise, extraPersonDoublePaise,
+  initialName, initialPhone,
   defaultFareFor, onRelease, onExtend, onExpired, onDone,
 }: {
   hold: { holdId: string; expiresAt: string; serverNow: string };
   rows: SeatStateRow[];
   points: PointOption[];
   direction: "ONWARD" | "RETURN";
+  extraPersonSinglePaise: number;
+  extraPersonDoublePaise: number;
   initialName: string;
   initialPhone: string;
   defaultFareFor: (s: SeatStateRow) => number;
@@ -505,10 +524,17 @@ function ConfirmPanel({
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const extraPersonFareFor = (r: SeatStateRow) =>
+    r.berthType === "SLEEPER_SINGLE" ? extraPersonSinglePaise
+      : r.berthType === "SLEEPER_DOUBLE" ? extraPersonDoublePaise : 0;
 
   /** price per seat, pre-filled from the bus and editable here */
   const [fares, setFares] = useState<Record<string, string>>(() =>
     Object.fromEntries(rows.map((r) => [r.seatId, String(defaultFareFor(r) / 100)])));
+  const [extraPersonCounts, setExtraPersonCounts] = useState<Record<string, string>>({});
+  const [extraPersonCharges, setExtraPersonCharges] = useState<Record<string, string>>(
+    () => Object.fromEntries(rows.map((r) => [r.seatId, String(extraPersonFareFor(r) / 100)])),
+  );
 
   // On the return leg the bus starts from the far end, so the route's two stop
   // lists swap over — otherwise the counter offers Rajkot pickups for a bus
@@ -516,7 +542,9 @@ function ConfirmPanel({
   const kinds = pointKindsFor(direction);
   const pickups = points.filter((p) => p.kind === kinds.pickup);
   const drops = points.filter((p) => p.kind === kinds.drop);
-  const totalRupees = rows.reduce((t, r) => t + (Number(fares[r.seatId]) || 0), 0);
+  const totalRupees = rows.reduce((t, r) =>
+    t + (Number(fares[r.seatId]) || 0)
+      + (Number(extraPersonCounts[r.seatId] || 0) * Number(extraPersonCharges[r.seatId] || 0)), 0);
 
   function submit() {
     setError(null); setFieldErrors({});
@@ -534,6 +562,8 @@ function ConfirmPanel({
         seats: rows.map((r) => ({
           seatId: r.seatId,
           fare: fares[r.seatId] || 0,
+          extraPersonCount: Number(extraPersonCounts[r.seatId] || 0),
+          extraPersonCharge: extraPersonCharges[r.seatId] ?? "0",
         })),
       });
       if (!res.ok || !res.data) {
@@ -621,15 +651,29 @@ function ConfirmPanel({
           <legend className="px-1 text-xs font-medium text-ink-700">Price</legend>
           <div className="flex flex-col gap-2">
             {rows.map((r) => (
-              <div key={r.seatId} className="flex items-center gap-2">
-                <span className="w-12 shrink-0 text-xs font-semibold text-ink-700">
-                  {r.seatNumber}
-                </span>
+              <div key={r.seatId} className="flex flex-wrap items-center gap-2">
+                <span className="w-12 shrink-0 text-xs font-semibold text-ink-700">{r.seatNumber}</span>
                 <span className="text-xs text-ink-400">₹</span>
                 <input value={fares[r.seatId] ?? ""} inputMode="decimal"
                   onChange={(e) => setFares((f) => ({ ...f, [r.seatId]: e.target.value }))}
                   aria-label={`Price for seat ${r.seatNumber}`}
-                  className="w-full rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-sm tabular-nums outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+                  className="min-w-20 flex-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-sm tabular-nums outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+                {r.berthType !== "CABIN" && (
+                  <div className="flex items-center gap-1.5 text-xs text-ink-600">
+                    <label htmlFor={`extra-count-${r.seatId}`}>Extra people</label>
+                    <input id={`extra-count-${r.seatId}`} type="number" min={0} max={20}
+                      value={extraPersonCounts[r.seatId] ?? "0"}
+                      onChange={(e) => setExtraPersonCounts((v) => ({ ...v, [r.seatId]: e.target.value }))}
+                      aria-label={`Extra people count for seat ${r.seatNumber}`}
+                      className="w-16 rounded-lg border border-[var(--border)] px-2 py-1.5 text-sm tabular-nums outline-none focus:border-brand-500" />
+                    <span>× ₹</span>
+                    <input type="number" min={0} inputMode="decimal"
+                      value={extraPersonCharges[r.seatId] ?? "0"}
+                      onChange={(e) => setExtraPersonCharges((v) => ({ ...v, [r.seatId]: e.target.value }))}
+                      aria-label={`Extra-person charge for seat ${r.seatNumber}`}
+                      className="w-20 rounded-lg border border-[var(--border)] px-2 py-1.5 text-sm tabular-nums outline-none focus:border-brand-500" />
+                  </div>
+                )}
               </div>
             ))}
           </div>

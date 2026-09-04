@@ -150,6 +150,8 @@ export async function confirmBookingAction(raw: unknown): Promise<Result<{
         age: s.age ?? null,
         gender: s.gender ?? null,
         farePaise: s.fare,
+        extraPersonCount: s.extraPersonCount,
+        extraPersonChargePaise: s.extraPersonCharge,
       })),
     });
     revalidatePath("/trips");

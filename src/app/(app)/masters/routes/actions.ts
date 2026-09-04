@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { boardingPoint, route } from "@/db/schema";
+import { boardingPoint, route, trip } from "@/db/schema";
 import { requireSession, requestMeta } from "@/server/auth";
 import { writeAudit } from "@/server/audit";
 import { routeFormSchema } from "@/lib/schemas";
@@ -36,6 +36,7 @@ export async function saveRouteAction(raw: unknown): Promise<RouteActionResult> 
         if (!existing) {
           throw new AppError("ROUTE_NOT_FOUND", "That route no longer exists.");
         }
+
         before = existing;
         await tx.update(route).set({
           code: v.code, origin: v.origin, destination: v.destination,
@@ -90,5 +91,29 @@ export async function saveRouteAction(raw: unknown): Promise<RouteActionResult> 
     return { ok: true, routeId };
   } catch (e) {
     return failure(e, "saveRoute");
+  }
+}
+
+export async function removeRouteAction(routeId: string): Promise<RouteActionResult> {
+  const session = await requireSession();
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [existing] = await tx.select().from(route).where(eq(route.id, routeId)).limit(1);
+      if (!existing) throw new AppError("ROUTE_NOT_FOUND", "That route no longer exists.");
+      await tx.update(route).set({ isActive: false }).where(eq(route.id, routeId));
+      await tx.update(trip).set({ status: "CANCELLED" })
+        .where(and(eq(trip.routeId, routeId), eq(trip.status, "SCHEDULED"),
+          sql`${trip.serviceDate} >= to_char(current_date, 'YYYY-MM-DD')`));
+      await tx.update(boardingPoint).set({ isActive: false }).where(eq(boardingPoint.routeId, routeId));
+      await writeAudit(tx, {
+        agentId: session.agentId, action: "ROUTE_REMOVED", entityType: "route", entityId: routeId,
+        before: existing, after: { ...existing, isActive: false },
+      });
+      return { routeId };
+    });
+    revalidatePath("/masters/routes");
+    return { ok: true, ...result };
+  } catch (e) {
+    return failure(e, "removeRoute");
   }
 }

@@ -46,6 +46,8 @@ export default async function EditBusPage({
         fareSingleSofa: row.fareSingleSofaPaise / 100,
         fareDoubleSofa: row.fareDoubleSofaPaise / 100,
         fareCabin: row.fareCabinPaise / 100,
+        extraPersonSingle: row.extraPersonSinglePaise / 100,
+        extraPersonDouble: row.extraPersonDoublePaise / 100,
         layout: layout ?? generateStandardLayout(),
         layoutInUse: inUse,
         layoutVersion: layoutRow?.version,

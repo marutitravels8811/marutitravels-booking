@@ -13,6 +13,7 @@ export interface OfficeDetails {
   phone: string | null;
   altPhone: string | null;
   address: string | null;
+  altAddress: string | null;
   email: string | null;
   gstin: string | null;
   /** short clauses, printed as one line on a compact ticket */
@@ -26,6 +27,7 @@ export function getOfficeDetails(): OfficeDetails {
     phone: process.env.OFFICE_PHONE || null,
     altPhone: process.env.OFFICE_ALT_PHONE || null,
     address: process.env.OFFICE_ADDRESS || null,
+    altAddress: process.env.OFFICE_ALT_ADDRESS || null,
     email: process.env.OFFICE_EMAIL || null,
     gstin: process.env.OFFICE_GSTIN || null,
     terms: (process.env.OFFICE_TERMS ||

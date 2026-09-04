@@ -8,6 +8,10 @@ import {
 } from "@/server/services/schedule";
 import { failure, zodFailure, type ActionResult } from "@/server/errors";
 import { serviceDateOf } from "@/lib/time";
+import { db } from "@/db";
+import { and, eq, sql } from "drizzle-orm";
+import { scheduleTemplate, trip } from "@/db/schema";
+import { writeAudit } from "@/server/audit";
 
 export async function saveScheduleAction(
   raw: unknown,
@@ -61,4 +65,31 @@ export async function scheduleImpactAction(
   } catch (e) {
     return failure(e, "scheduleImpact");
   }
+}
+
+export async function removeScheduleAction(scheduleId: string): Promise<ActionResult> {
+    try {
+      const session = await requireSession();
+      await db.transaction(async (tx) => {
+        const [existing] = await tx.select().from(scheduleTemplate)
+          .where(eq(scheduleTemplate.id, scheduleId)).limit(1);
+        if (!existing) throw new Error("That schedule no longer exists.");
+        await tx.update(scheduleTemplate).set({ isActive: false })
+          .where(eq(scheduleTemplate.id, scheduleId));
+        await tx.update(trip).set({ status: "CANCELLED" }).where(and(
+          eq(trip.templateId, scheduleId), eq(trip.status, "SCHEDULED"),
+          sql`${trip.serviceDate} >= to_char(current_date, 'YYYY-MM-DD')`,
+        ));
+        await writeAudit(tx, {
+          agentId: session.agentId, action: "SCHEDULE_REMOVED",
+          entityType: "schedule_template", entityId: scheduleId,
+          before: existing, after: { ...existing, isActive: false },
+        });
+      });
+      revalidatePath("/masters/schedules");
+      revalidatePath("/trips");
+      return { ok: true };
+    } catch (e) {
+      return failure(e, "removeSchedule");
+    }
 }

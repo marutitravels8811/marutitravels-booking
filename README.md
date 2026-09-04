@@ -115,7 +115,7 @@ because the format toggle is client state while the ticket is rendered on the
 server — switching from 8-up to A5 has to restyle without a re-render.
 
 Set the operator header in the environment — `OFFICE_NAME`, `OFFICE_PHONE`,
-`OFFICE_ADDRESS`, `OFFICE_GSTIN` and `OFFICE_TERMS`. They default to obvious
+`OFFICE_ADDRESS`, `OFFICE_ALT_ADDRESS`, `OFFICE_GSTIN` and `OFFICE_TERMS`. They default to obvious
 placeholders so an unconfigured deployment is caught at the first print rather
 than by a customer.
 

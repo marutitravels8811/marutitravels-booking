@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { desc, sql } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { Plus, Route as RouteIcon } from "lucide-react";
 import { db } from "@/db";
-import { boardingPoint, route } from "@/db/schema";
+import { boardingPoint, route, trip } from "@/db/schema";
+import { RemoveMasterButton } from "../RemoveMasterButton";
+import { removeRouteAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +13,22 @@ export default async function RoutesPage() {
     id: route.id, code: route.code, origin: route.origin,
     destination: route.destination, distanceKm: route.distanceKm,
     isActive: route.isActive,
-    pickups: sql<number>`(select count(*)::int from ${boardingPoint} p
-      where p.route_id = ${route.id} and p.kind = 'BOARDING' and p.is_active)`,
-    drops: sql<number>`(select count(*)::int from ${boardingPoint} p
-      where p.route_id = ${route.id} and p.kind = 'DROPPING' and p.is_active)`,
-  }).from(route).orderBy(desc(route.isActive), route.code);
+    futureTripCount: sql<number>`(select count(*)::int from ${trip} t where t.route_id = ${route.id} and t.status = 'SCHEDULED' and t.service_date >= to_char(current_date, 'YYYY-MM-DD'))`,
+  }).from(route).where(eq(route.isActive, true)).orderBy(route.code);
+  const pointCounts = await db.select({
+    routeId: boardingPoint.routeId,
+    kind: boardingPoint.kind,
+    count: count(),
+  }).from(boardingPoint)
+    .where(eq(boardingPoint.isActive, true))
+    .groupBy(boardingPoint.routeId, boardingPoint.kind);
+  const countsByRoute = new Map<string, { pickups: number; drops: number }>();
+  for (const point of pointCounts) {
+    const counts = countsByRoute.get(point.routeId) ?? { pickups: 0, drops: 0 };
+    if (point.kind === "BOARDING") counts.pickups = Number(point.count);
+    if (point.kind === "DROPPING") counts.drops = Number(point.count);
+    countsByRoute.set(point.routeId, counts);
+  }
 
   return (
     <div className="p-4 sm:p-6">
@@ -66,7 +79,7 @@ export default async function RoutesPage() {
                     {r.distanceKm ? `${r.distanceKm} km` : "—"}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-ink-600">
-                    {r.pickups} / {r.drops}
+                    {countsByRoute.get(r.id)?.pickups ?? 0} / {countsByRoute.get(r.id)?.drops ?? 0}
                   </td>
                   <td className="px-4 py-3">
                     <span className={r.isActive
@@ -76,8 +89,11 @@ export default async function RoutesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/masters/routes/${r.id}`}
-                      className="text-xs font-medium text-brand-600 hover:underline">Edit</Link>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link href={`/masters/routes/${r.id}`}
+                        className="text-xs font-medium text-brand-600 hover:underline">Edit</Link>
+                      <RemoveMasterButton label="route" id={r.id} futureTripCount={r.futureTripCount} onRemove={removeRouteAction} />
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -56,6 +56,7 @@ export interface SeatLike {
   rowIndex: number;
   colIndex: number;
   isActive: boolean;
+  customerName?: string | null;
 }
 
 export function groupKeyOf(s: SeatLike | DraftSeat): string | null {

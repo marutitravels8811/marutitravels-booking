@@ -128,6 +128,8 @@ export const bus = pgTable("bus", {
   fareSingleSofaPaise: bigint("fare_single_sofa_paise", { mode: "number" }).notNull().default(0),
   fareDoubleSofaPaise: bigint("fare_double_sofa_paise", { mode: "number" }).notNull().default(0),
   fareCabinPaise: bigint("fare_cabin_paise", { mode: "number" }).notNull().default(0),
+  extraPersonSinglePaise: bigint("extra_person_single_paise", { mode: "number" }).notNull().default(0),
+  extraPersonDoublePaise: bigint("extra_person_double_paise", { mode: "number" }).notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("bus_reg_uq").on(t.registrationNo)]);
@@ -301,7 +303,15 @@ export const bookingSeat = pgTable("booking_seat", {
   age: integer("age"),
   gender: genderEnum("gender"),
   farePaise: bigint("fare_paise", { mode: "number" }).notNull().default(0),
-}, (t) => [primaryKey({ columns: [t.bookingId, t.seatId] })]);
+  /** Number of passengers sharing this berth in addition to the berth holder. */
+  extraPersonCount: integer("extra_person_count").notNull().default(0),
+  /** Kept for reads of pre-count migrations; new writes use extraPersonCount. */
+  extraPerson: boolean("extra_person").notNull().default(false),
+  extraPersonChargePaise: bigint("extra_person_charge_paise", { mode: "number" }).notNull().default(0),
+}, (t) => [
+  primaryKey({ columns: [t.bookingId, t.seatId] }),
+  check("booking_seat_extra_person_count_nonnegative", sql`${t.extraPersonCount} >= 0`),
+]);
 
 export const payment = pgTable("payment", {
   id: uuid("id").primaryKey().defaultRandom(),

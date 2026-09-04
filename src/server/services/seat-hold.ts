@@ -2,7 +2,9 @@
 // can drive these functions directly under tsx.
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { agent, bus, route, seat, seatHold, trip, tripSeatState } from "@/db/schema";
+import {
+  agent, booking, bus, route, seat, seatHold, trip, tripSeatState,
+} from "@/db/schema";
 import { writeAudit } from "@/server/audit";
 
 /**
@@ -314,6 +316,7 @@ export interface SeatStateRow {
   heldByAgentName: string | null;
   heldUntil: Date | null;
   bookingId: string | null;
+  customerName: string | null;
   blockReason: string | null;
   version: number;
 }
@@ -342,6 +345,7 @@ export async function getTripSeatStates(
       holdId: tripSeatState.holdId,
       heldUntil: tripSeatState.heldUntil,
       bookingId: tripSeatState.bookingId,
+      customerName: booking.primaryPassengerName,
       blockReason: tripSeatState.blockReason,
       version: tripSeatState.version,
       heldByAgentId: seatHold.agentId,
@@ -352,6 +356,7 @@ export async function getTripSeatStates(
     .innerJoin(seat, eq(seat.id, tripSeatState.seatId))
     .leftJoin(seatHold, eq(seatHold.id, tripSeatState.holdId))
     .leftJoin(agent, eq(agent.id, seatHold.agentId))
+    .leftJoin(booking, eq(booking.id, tripSeatState.bookingId))
     .where(eq(tripSeatState.tripId, tripId))
     .orderBy(seat.sortOrder);
 
@@ -377,6 +382,7 @@ export async function getTripSeatStates(
       heldByAgentName: expired ? null : r.heldByAgentName,
       heldUntil: expired ? null : heldUntil,
       bookingId: r.bookingId,
+      customerName: r.customerName,
       blockReason: r.blockReason,
       version: r.version,
     };

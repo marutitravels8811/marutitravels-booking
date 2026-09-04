@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import {
-  Bus, CalendarClock, LayoutDashboard, ListChecks, Route as RouteIcon,
+  BarChart3, Bus, CalendarClock, LayoutDashboard, ListChecks, Route as RouteIcon,
   Ticket, Timer, Users,
 } from "lucide-react";
 import { getVerifiedSession, destroySession } from "@/server/auth";
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/trips", label: "Book a ticket", icon: <Ticket size={16} /> },
   { href: "/holds", label: "Reserved seats", icon: <Timer size={16} /> },
   { href: "/bookings", label: "Bookings", icon: <ListChecks size={16} /> },
+  { href: "/reports", label: "Reports", icon: <BarChart3 size={16} /> },
   { href: "/masters/buses", label: "Buses", icon: <Bus size={16} /> },
   { href: "/masters/routes", label: "Routes", icon: <RouteIcon size={16} /> },
   { href: "/masters/schedules", label: "Schedules", icon: <CalendarClock size={16} /> },

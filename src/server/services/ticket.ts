@@ -13,6 +13,9 @@ export interface TicketSeat {
   age: number | null;
   gender: "M" | "F" | "O" | null;
   farePaise: number;
+  extraPersonCount: number;
+  extraPerson: boolean;
+  extraPersonChargePaise: number;
 }
 
 export interface TicketData {
@@ -104,6 +107,9 @@ async function withSeats(rows: BaseRow[]): Promise<TicketData[]> {
       age: bookingSeat.age,
       gender: bookingSeat.gender,
       farePaise: bookingSeat.farePaise,
+      extraPersonCount: bookingSeat.extraPersonCount,
+      extraPerson: bookingSeat.extraPerson,
+      extraPersonChargePaise: bookingSeat.extraPersonChargePaise,
     })
     .from(bookingSeat)
     .innerJoin(seat, eq(seat.id, bookingSeat.seatId))
@@ -117,6 +123,9 @@ async function withSeats(rows: BaseRow[]): Promise<TicketData[]> {
       seatNumber: s.seatNumber, deck: s.deck, berthType: s.berthType,
       passengerName: s.passengerName, age: s.age, gender: s.gender,
       farePaise: s.farePaise,
+      extraPersonCount: s.extraPersonCount || (s.extraPerson ? 1 : 0),
+      extraPerson: s.extraPerson,
+      extraPersonChargePaise: s.extraPersonChargePaise,
     });
     byBooking.set(s.bookingId, list);
   }

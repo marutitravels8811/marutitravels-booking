@@ -1,5 +1,5 @@
 // Server-side only. Not marked `server-only` so scripts can seed schedules.
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { bus, route, scheduleTemplate, trip } from "@/db/schema";
 import { writeAudit } from "@/server/audit";
@@ -23,6 +23,7 @@ export interface ScheduleRow {
   validFrom: Date;
   validTo: Date | null;
   isActive: boolean;
+  futureTripCount: number;
   /** trips already generated from this schedule */
   tripsGenerated: number;
   /** the last date a trip exists for, so gaps are visible */
@@ -47,6 +48,10 @@ export async function listSchedules(): Promise<ScheduleRow[]> {
       validFrom: scheduleTemplate.validFrom,
       validTo: scheduleTemplate.validTo,
       isActive: scheduleTemplate.isActive,
+      futureTripCount: sql<number>`(
+        select count(*)::int from ${trip} t where t.template_id = ${scheduleTemplate.id}
+          and t.status = 'SCHEDULED' and t.service_date >= to_char(current_date, 'YYYY-MM-DD')
+      )`,
       tripsGenerated: sql<number>`(
         select count(*)::int from ${trip} t where t.template_id = ${scheduleTemplate.id}
       )`,
@@ -58,7 +63,8 @@ export async function listSchedules(): Promise<ScheduleRow[]> {
     .from(scheduleTemplate)
     .innerJoin(route, eq(route.id, scheduleTemplate.routeId))
     .innerJoin(bus, eq(bus.id, scheduleTemplate.busId))
-    .orderBy(desc(scheduleTemplate.isActive), route.code,
+    .where(and(eq(scheduleTemplate.isActive, true), eq(route.isActive, true), eq(bus.isActive, true)))
+    .orderBy(route.code,
              scheduleTemplate.departureTime);
 
   return rows.map((r) => ({

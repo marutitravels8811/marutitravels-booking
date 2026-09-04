@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Ticket as TicketIcon } from "lucide-react";
+import { ChevronLeft, Download, Ticket as TicketIcon } from "lucide-react";
 import { requireSession } from "@/server/auth";
 import { getTicketsForTrip, getTripHeader } from "@/server/services/ticket";
 import { getOfficeDetails } from "@/lib/office";
@@ -53,6 +53,10 @@ export default async function TripTicketsPage({
           {header.busName} ({header.registrationNo}) ·{" "}
           {directionLabel(header.direction)}
         </p>
+        <Link href={`/api/trips/${tripId}/manifest`}
+          className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium text-ink-700 hover:bg-ink-50">
+          <Download size={14} /> Download passenger manifest
+        </Link>
       </header>
 
       {tickets.length === 0 ? (

@@ -69,11 +69,14 @@ export async function releaseHoldFromTrayAction(
 }
 
 export async function extendHoldFromTrayAction(
-  holdId: string,
+  holdId: string, ttlMinutes = 30,
 ): Promise<{ ok: boolean; expiresAt?: string; error?: string; code?: string }> {
   try {
     const session = await requireSession();
-    const r = await extendHold({ holdId, agentId: session.agentId });
+    if (!Number.isInteger(ttlMinutes) || ttlMinutes < 1 || ttlMinutes > 24 * 60) {
+      return { ok: false, error: "Choose an extension between 1 minute and 24 hours." };
+    }
+    const r = await extendHold({ holdId, agentId: session.agentId, ttlMinutes });
     revalidatePath("/holds");
     return { ok: true, expiresAt: r.expiresAt.toISOString() };
   } catch (e) {

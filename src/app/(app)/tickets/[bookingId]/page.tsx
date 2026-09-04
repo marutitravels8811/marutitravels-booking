@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Pencil } from "lucide-react";
 import { requireSession } from "@/server/auth";
 import { getTicket } from "@/server/services/ticket";
 import { getOfficeDetails } from "@/lib/office";
 import { Ticket } from "@/components/ticket/Ticket";
 import { PrintSheet } from "@/components/ticket/PrintSheet";
+import { CancelBookingButton } from "@/app/(app)/bookings/CancelBookingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,15 @@ export default async function TicketPage({
         subtitle={`${ticket.pnr} · ${ticket.customerName} · seat ${ticket.seats.map((s) => s.seatNumber).join(", ")}`}>
         <Ticket ticket={ticket} office={office} />
       </PrintSheet>
+      {ticket.status !== "CANCELLED" && (
+        <div className="no-print mt-4 flex justify-end">
+          <Link href={`/bookings/${ticket.bookingId}/edit`}
+            className="mr-2 inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium text-ink-700 hover:bg-ink-50">
+            <Pencil size={13} /> Edit booking
+          </Link>
+          <CancelBookingButton bookingId={ticket.bookingId} />
+        </div>
+      )}
     </div>
   );
 }

@@ -225,8 +225,10 @@ export async function listTripsForDate(
     .innerJoin(bus, eq(bus.id, trip.busId))
     .innerJoin(route, eq(route.id, trip.routeId))
     .where(routeId
-      ? and(eq(trip.serviceDate, serviceDate), eq(trip.routeId, routeId))
-      : eq(trip.serviceDate, serviceDate))
+      ? and(eq(trip.serviceDate, serviceDate), eq(trip.routeId, routeId),
+        eq(trip.status, "SCHEDULED"), eq(bus.isActive, true), eq(route.isActive, true))
+      : and(eq(trip.serviceDate, serviceDate), eq(trip.status, "SCHEDULED"),
+        eq(bus.isActive, true), eq(route.isActive, true)))
     .orderBy(trip.departureAt, bus.displayName);
 
   return rows as TripListRow[];

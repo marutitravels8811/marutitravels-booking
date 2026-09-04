@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, RefreshCw, Timer, User } from "lucide-react";
 import { HoldTimer } from "@/app/(app)/book/[tripId]/HoldTimer";
-import { formatTime } from "@/lib/time";
+import { formatDateTime, formatTime } from "@/lib/time";
 import { journeyLabel } from "@/lib/journey";
 import { cn } from "@/lib/utils";
 import {
@@ -14,6 +14,7 @@ import {
 } from "./actions";
 
 const POLL_MS = 5000;
+const input = "w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
 
 export function HoldsTray({ initial, serverNow }: {
   initial: HoldSummary[]; serverNow: string;
@@ -23,6 +24,10 @@ export function HoldsTray({ initial, serverNow }: {
   const [now, setNow] = useState(serverNow);
   const [pending, start] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [extendHold, setExtendHold] = useState<HoldSummary | null>(null);
+  const [extendMode, setExtendMode] = useState<"duration" | "until">("duration");
+  const [minutes, setMinutes] = useState("30");
+  const [until, setUntil] = useState("");
 
   useEffect(() => {
     const id = setInterval(async () => {
@@ -69,7 +74,14 @@ export function HoldsTray({ initial, serverNow }: {
         subtitle="Confirm these once the customer has paid."
         holds={mine} now={now} busyId={busyId} pending={pending}
         onRelease={(id) => act(id, () => releaseHoldFromTrayAction(id))}
-        onExtend={(id) => act(id, () => extendHoldFromTrayAction(id))}
+        onExtend={(id) => {
+          const hold = holds.find((h) => h.holdId === id);
+          if (hold) {
+            setExtendHold(hold);
+            setMinutes("30");
+            setUntil("");
+          }
+        }}
         onExpire={() => listHoldsAction().then((r) => { setHolds(r.holds); setNow(r.serverNow); })}
       />
       {others.length > 0 && (
@@ -85,6 +97,57 @@ export function HoldsTray({ initial, serverNow }: {
           onExpire={() => listHoldsAction().then((r) => { setHolds(r.holds); setNow(r.serverNow); })}
         />
       )}
+      {extendHold && (
+        <ExtendDialog hold={extendHold} mode={extendMode} setMode={setExtendMode}
+          minutes={minutes} setMinutes={setMinutes} until={until} setUntil={setUntil}
+          onCancel={() => setExtendHold(null)}
+          onConfirm={() => {
+            const extension = extendMode === "duration" ? Number(minutes) : minutesUntil(until);
+            if (!Number.isInteger(extension) || extension < 1) return;
+            act(extendHold.holdId, async () => {
+              const result = await extendHoldFromTrayAction(extendHold.holdId, extension);
+              if (result.ok) setExtendHold(null);
+              return result;
+            });
+          }} />
+      )}
+    </div>
+  );
+}
+
+function minutesUntil(value: string) {
+  const [hours, minutes] = value.split(":").map(Number);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return 0;
+  const target = new Date();
+  target.setHours(hours, minutes, 0, 0);
+  if (target.getTime() <= Date.now()) target.setDate(target.getDate() + 1);
+  return Math.ceil((target.getTime() - Date.now()) / 60000);
+}
+
+function ExtendDialog({ hold, mode, setMode, minutes, setMinutes, until, setUntil, onCancel, onConfirm }: {
+  hold: HoldSummary; mode: "duration" | "until"; setMode: (v: "duration" | "until") => void;
+  minutes: string; setMinutes: (v: string) => void; until: string; setUntil: (v: string) => void;
+  onCancel: () => void; onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4">
+      <div role="dialog" aria-modal="true" className="w-full max-w-sm rounded-xl bg-[var(--surface)] p-5 shadow-xl">
+        <h2 className="text-base font-semibold text-ink-900">Add time to reservation</h2>
+        <p className="mt-1 text-xs text-ink-500">Seats {hold.seatNumbers.join(", ")} · Default extension is 30 minutes.</p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => setMode("duration")} className={cn("rounded-lg border px-3 py-2 text-xs font-medium", mode === "duration" ? "border-brand-500 bg-brand-50 text-brand-800" : "border-[var(--border)] text-ink-700")}>For a duration</button>
+          <button type="button" onClick={() => setMode("until")} className={cn("rounded-lg border px-3 py-2 text-xs font-medium", mode === "until" ? "border-brand-500 bg-brand-50 text-brand-800" : "border-[var(--border)] text-ink-700")}>Until a time</button>
+        </div>
+        {mode === "duration" ? (
+          <input autoFocus type="number" min={1} max={1440} value={minutes} onChange={(e) => setMinutes(e.target.value)} placeholder="Minutes" className={`${input} mt-3`} />
+        ) : (
+          <input autoFocus type="time" value={until} onChange={(e) => setUntil(e.target.value)} className={`${input} mt-3`} />
+        )}
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={onCancel} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm text-ink-700">Cancel</button>
+          <button type="button" onClick={onConfirm} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Add time</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -120,7 +183,12 @@ function Section({
                 </p>
                 <p className="text-xs text-ink-500">{h.busName}</p>
               </div>
-              <HoldTimer expiresAt={h.expiresAt} serverNow={now} onExpire={onExpire} />
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-[11px] font-medium text-ink-500">
+                  Reserved until {formatDateTime(h.expiresAt)}
+                </span>
+                <HoldTimer expiresAt={h.expiresAt} serverNow={now} onExpire={onExpire} />
+              </div>
             </div>
 
             {(h.provisionalName || h.provisionalPhone) && (

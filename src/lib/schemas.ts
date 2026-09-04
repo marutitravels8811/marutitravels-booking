@@ -45,6 +45,8 @@ export const busFormSchema = z.object({
   fareSingleSofa: rupeeField,
   fareDoubleSofa: rupeeField,
   fareCabin: rupeeField,
+  extraPersonSingle: rupeeField,
+  extraPersonDouble: rupeeField,
   layout: draftLayoutSchema,
 });
 
@@ -146,5 +148,29 @@ export const confirmBookingSchema = z.object({
     age: z.number().int().min(0).max(120).nullable().optional(),
     gender: z.enum(["M", "F", "O"]).nullable().optional(),
     fare: rupeeField,
+    extraPersonCount: z.number().int().min(0).max(20).default(0),
+    extraPersonCharge: rupeeField.optional(),
   })).min(1),
+});
+
+export const editBookingSchema = z.object({
+  bookingId: z.string().uuid(),
+  tripId: z.string().uuid(),
+  customerName: z.string().trim().min(1, "Enter the customer's name").max(120),
+  customerPhone: z.string().trim().min(6, "Enter a valid phone number").max(20)
+    .regex(/^[\d+\-() ]+$/, "Phone number can only contain digits and + - ( )"),
+  altPhone: z.string().trim().max(20).optional().or(z.literal("")),
+  boardingName: z.string().trim().max(160).optional().or(z.literal("")),
+  droppingName: z.string().trim().max(160).optional().or(z.literal("")),
+  paymentType: paymentTypeSchema,
+  amountPaid: rupeeField,
+  boardingPointId: z.string().uuid().nullable().optional(),
+  droppingPointId: z.string().uuid().nullable().optional(),
+  note: z.string().trim().max(500).optional().or(z.literal("")),
+  seats: z.array(z.object({
+    seatId: z.string().uuid(),
+    fare: rupeeField,
+    extraPersonCount: z.number().int().min(0).max(20).default(0),
+    extraPersonCharge: rupeeField,
+  })).min(1, "Select at least one seat"),
 });

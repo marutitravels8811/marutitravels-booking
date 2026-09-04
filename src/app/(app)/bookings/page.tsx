@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { and, desc, eq, gte, ilike, lte, or, sql, type SQL } from "drizzle-orm";
-import { Printer, Search, Ticket } from "lucide-react";
+import { Download, Pencil, Printer, Search, Ticket } from "lucide-react";
 import { db } from "@/db";
 import {
   agent, booking, bookingSeat, bus, route, seat, trip,
@@ -8,6 +8,7 @@ import {
 import { formatINR } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 import { journeyLabel } from "@/lib/journey";
+import { CancelBookingButton } from "./CancelBookingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -70,10 +71,18 @@ export default async function BookingsPage({
   return (
     <div className="p-4 sm:p-6">
       <header className="mb-5">
-        <h1 className="text-lg font-semibold text-ink-900">Bookings</h1>
-        <p className="text-sm text-ink-500">
-          Most recent first. Search by ticket number, phone or passenger name.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-semibold text-ink-900">Bookings</h1>
+            <p className="text-sm text-ink-500">
+              Most recent first. Search by ticket number, phone or passenger name.
+            </p>
+          </div>
+          <Link href={`/api/reports/export?kind=bookings&basis=travel&from=${sp.from ?? ""}&to=${sp.to ?? ""}&q=${encodeURIComponent(q)}`}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50">
+            <Download size={15} /> Download Excel
+          </Link>
+        </div>
       </header>
 
       <form className="mb-4 grid gap-2 sm:flex sm:flex-wrap sm:items-end">
@@ -182,10 +191,19 @@ export default async function BookingsPage({
                     <span className="block text-ink-400">{formatDateTime(b.createdAt)}</span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/tickets/${b.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline">
-                      <Printer size={12} /> Ticket
-                    </Link>
+                    <div className="flex flex-col items-end gap-2">
+                      <Link href={`/tickets/${b.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline">
+                        <Printer size={12} /> View booking
+                      </Link>
+                      {b.status !== "CANCELLED" && <CancelBookingButton bookingId={b.id} />}
+                      {b.status !== "CANCELLED" && (
+                        <Link href={`/bookings/${b.id}/edit`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-ink-600 hover:text-brand-700">
+                          <Pencil size={12} /> Edit booking
+                        </Link>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

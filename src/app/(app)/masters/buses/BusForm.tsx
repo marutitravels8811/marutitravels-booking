@@ -18,6 +18,8 @@ export interface BusFormInitial {
   fareSingleSofa: number;
   fareDoubleSofa: number;
   fareCabin: number;
+  extraPersonSingle: number;
+  extraPersonDouble: number;
   layout: DraftLayout;
   layoutInUse: boolean;
   layoutVersion?: number;
@@ -34,6 +36,8 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
   const [fareSingleSofa, setFareSingleSofa] = useState(String(initial?.fareSingleSofa ?? ""));
   const [fareDoubleSofa, setFareDoubleSofa] = useState(String(initial?.fareDoubleSofa ?? ""));
   const [fareCabin, setFareCabin] = useState(String(initial?.fareCabin ?? ""));
+  const [extraPersonSingle, setExtraPersonSingle] = useState(String(initial?.extraPersonSingle ?? 0));
+  const [extraPersonDouble, setExtraPersonDouble] = useState(String(initial?.extraPersonDouble ?? 0));
   const [layout, setLayout] = useState<DraftLayout>(
     initial?.layout ?? generateStandardLayout(),
   );
@@ -51,6 +55,8 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
         fareSingleSofa: fareSingleSofa || 0,
         fareDoubleSofa: fareDoubleSofa || 0,
         fareCabin: fareCabin || 0,
+        extraPersonSingle: extraPersonSingle || 0,
+        extraPersonDouble: extraPersonDouble || 0,
         layout: { ...layout, name: layout.name || `${displayName} layout` },
       });
       if (!res.ok) {
@@ -111,6 +117,21 @@ export function BusForm({ initial }: { initial?: BusFormInitial }) {
                 placeholder="1200" className={inputCls(!!fieldErrors.fareCabin)} />
             </Field>
           </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Field label="Extra person — single sofa (₹)" error={fieldErrors.extraPersonSingle}>
+              <input value={extraPersonSingle} inputMode="decimal"
+                onChange={(e) => setExtraPersonSingle(e.target.value)}
+                placeholder="0" className={inputCls(!!fieldErrors.extraPersonSingle)} />
+            </Field>
+            <Field label="Extra person — double sofa (₹)" error={fieldErrors.extraPersonDouble}>
+              <input value={extraPersonDouble} inputMode="decimal"
+                onChange={(e) => setExtraPersonDouble(e.target.value)}
+                placeholder="0" className={inputCls(!!fieldErrors.extraPersonDouble)} />
+            </Field>
+          </div>
+          <p className="mt-2 text-[11px] text-ink-500">
+            Agents can add one extra person to a single or double sofa during booking.
+          </p>
         </fieldset>
 
         <label className="mt-4 inline-flex items-center gap-2 text-sm text-ink-700">

@@ -36,6 +36,8 @@ export default async function BookTripPage({
       fareSingleSofaPaise: bus.fareSingleSofaPaise,
       fareDoubleSofaPaise: bus.fareDoubleSofaPaise,
       fareCabinPaise: bus.fareCabinPaise,
+      extraPersonSinglePaise: bus.extraPersonSinglePaise,
+      extraPersonDoublePaise: bus.extraPersonDoublePaise,
       sleeperRows: seatLayout.sleeperRows,
       sleeperCols: seatLayout.sleeperCols,
       cabinCols: seatLayout.cabinCols,
@@ -92,6 +94,8 @@ export default async function BookTripPage({
           fareSingleSofaPaise: row.fareSingleSofaPaise,
           fareDoubleSofaPaise: row.fareDoubleSofaPaise,
           fareCabinPaise: row.fareCabinPaise,
+          extraPersonSinglePaise: row.extraPersonSinglePaise,
+          extraPersonDoublePaise: row.extraPersonDoublePaise,
         }}
         initialSeats={seats}
         resume={resumed && resumed.isMine && resumed.tripId === tripId ? {

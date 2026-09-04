@@ -31,7 +31,7 @@ export function ChangePasswordForm({ forced, agentName }: {
         return;
       }
       setDone(true);
-      router.replace("/dashboard");
+      router.replace("/trips");
       router.refresh();
     });
   }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { CalendarRange, Printer } from "lucide-react";
+import { CalendarRange, Download, Printer } from "lucide-react";
 import { db } from "@/db";
 import { bus, route } from "@/db/schema";
 import { listTripsForDate } from "@/server/services/trip";
@@ -105,10 +105,17 @@ export default async function TripsPage({
                   </span>
                   <span className="flex items-center gap-2">
                     {t.booked > 0 && (
-                      <Link href={`/trips/${t.id}/tickets`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50">
-                        <Printer size={12} /> Tickets
-                      </Link>
+                      <>
+                        <Link href={`/trips/${t.id}/tickets`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50">
+                          <Printer size={12} /> Tickets
+                        </Link>
+                        <Link href={`/api/trips/${t.id}/manifest`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50"
+                          title="Download whole-bus passenger manifest">
+                          <Download size={12} /> Manifest
+                        </Link>
+                      </>
                     )}
                     {t.status === "SCHEDULED" ? (
                       <Link href={`/book/${t.id}`}
