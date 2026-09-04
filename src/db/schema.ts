@@ -336,22 +336,6 @@ export const idempotencyKey = pgTable("idempotency_key", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const auditLog = pgTable("audit_log", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  agentId: uuid("agent_id").references(() => agent.id),
-  action: text("action").notNull(),
-  entityType: text("entity_type").notNull(),
-  entityId: text("entity_id"),
-  beforeJson: jsonb("before_json"),
-  afterJson: jsonb("after_json"),
-  ip: text("ip"),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [
-  index("audit_entity_idx").on(t.entityType, t.entityId, t.createdAt),
-  index("audit_agent_idx").on(t.agentId, t.createdAt),
-]);
-
 /* ──────────────────────────── relations ──────────────────────────── */
 
 export const busRelations = relations(bus, ({ many, one }) => ({

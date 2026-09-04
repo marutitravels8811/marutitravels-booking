@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   LayoutGrid, Trash2, Wand2, RotateCcw, AlertTriangle,
-  CheckCircle2, Eye, EyeOff, Plus, Minus,
+  CheckCircle2, Plus, Minus,
 } from "lucide-react";
 import { SeatMap } from "@/components/seat-map/SeatMap";
 import type { SeatLike } from "@/components/seat-map/geometry";
@@ -29,7 +29,6 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [pendingCell, setPendingCell] =
     useState<{ deck: Deck; row: number; col: number } | null>(null);
-  const [showInactive, setShowInactive] = useState(true);
 
   // report upward on every render where the layout changed
   const [lastSent, setLastSent] = useState<DraftLayout | null>(null);
@@ -40,9 +39,7 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
 
   const selected = layout.seats.find((s) => s.key === selectedKey) ?? null;
   const errors = issues.filter((i) => i.level === "error");
-  const visibleSeats = (showInactive
-    ? layout.seats
-    : layout.seats.filter((s) => s.isActive)) as unknown as SeatLike[];
+  const visibleSeats = layout.seats as unknown as SeatLike[];
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -74,11 +71,6 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
             min={1} max={14}
           />
 
-          <button type="button" onClick={() => setShowInactive((v) => !v)}
-            className="inline-flex items-center gap-1.5 sm:ml-auto rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:bg-ink-50">
-            {showInactive ? <Eye size={14} /> : <EyeOff size={14} />}
-            {showInactive ? "Showing disabled" : "Hiding disabled"}
-          </button>
         </div>
 
         <SeatMap
@@ -87,7 +79,9 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
           sleeperCols={layout.sleeperCols}
           cabinCols={layout.cabinCols}
           stateOf={(s) => (s.key === selectedKey ? "SELECTED" : "AVAILABLE")}
-          titleOf={(s) => `${s.seatNumber} · ${TYPE_LABEL[s.berthType]}${s.isActive ? "" : " (disabled)"}`}
+          titleOf={(s) => `${s.seatNumber} · ${TYPE_LABEL[s.berthType]}`}
+          editSeatNumbers={!readOnly}
+          onSeatNumberChange={(s, value) => dispatch({ type: "RENUMBER", key: s.key!, seatNumber: value })}
           onSeatClick={readOnly ? undefined : (s) => {
             setSelectedKey(s.key ?? null);
             setPendingCell(null);
@@ -143,7 +137,6 @@ export function LayoutEditor({ initial, onChange, readOnly = false }: Props) {
             layout={layout}
             onRenumber={(n) => dispatch({ type: "RENUMBER", key: selected.key, seatNumber: n })}
             onType={(t) => dispatch({ type: "SET_TYPE", key: selected.key, berthType: t })}
-            onToggle={() => dispatch({ type: "TOGGLE_ACTIVE", key: selected.key })}
             onRemove={() => {
               dispatch({ type: "REMOVE", keys: [selected.key] });
               setSelectedKey(null);
@@ -245,11 +238,10 @@ function AddPanel({ cell, onAdd, onCancel }: {
   );
 }
 
-function SeatInspector({ seat, layout, onRenumber, onType, onToggle, onRemove }: {
+function SeatInspector({ seat, layout, onRenumber, onType, onRemove }: {
   seat: DraftSeat; layout: DraftLayout;
   onRenumber: (n: string) => void;
   onType: (t: BerthType) => void;
-  onToggle: () => void;
   onRemove: () => void;
 }) {
   const duplicate = layout.seats.some(
@@ -305,11 +297,7 @@ function SeatInspector({ seat, layout, onRenumber, onType, onToggle, onRemove }:
         </p>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <button type="button" onClick={onToggle}
-          className="flex-1 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:bg-ink-50">
-          {seat.isActive ? "Disable" : "Enable"}
-        </button>
+      <div className="mt-4 flex justify-end gap-2">
         <button type="button" onClick={onRemove}
           className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50">
           <Trash2 size={13} /> Remove

@@ -124,7 +124,60 @@ export default async function BookingsPage({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+        <div>
+          <div className="grid gap-3 md:hidden">
+            {rows.map((b) => (
+              <article key={b.id} className={`rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm ${
+                b.status === "CANCELLED" ? "opacity-70" : ""
+              }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="font-mono text-xs font-bold text-ink-900">{b.pnr}</span>
+                    {b.status === "CANCELLED" && (
+                      <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700">
+                        Cancelled
+                      </span>
+                    )}
+                    <h2 className="mt-1 font-semibold text-ink-900">{b.name}</h2>
+                    <p className="text-xs text-ink-500">{b.phone}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold tabular-nums text-ink-900">{formatINR(b.amountTotalPaise)}</p>
+                    <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      b.paymentStatus === "PAID"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : b.paymentStatus === "PARTIAL"
+                        ? "bg-amber-50 text-amber-700"
+                        : "bg-red-50 text-red-700"
+                    }`}>
+                      {PAYMENT_LABEL[b.paymentType] ?? b.paymentType}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-[var(--border)] pt-3 text-xs">
+                  <div><span className="block text-ink-400">Journey</span><span className="font-medium text-ink-700">{journeyLabel(b.origin, b.destination, b.direction)}</span></div>
+                  <div><span className="block text-ink-400">Travel</span><span className="font-medium text-ink-700">{b.serviceDate} · {b.busName}</span></div>
+                  <div><span className="block text-ink-400">Seats</span><span className="font-mono font-medium text-ink-700">{b.seatNumbers}</span></div>
+                  <div><span className="block text-ink-400">Booked by</span><span className="font-medium text-ink-700">{b.bookedBy}</span></div>
+                  {(b.boardingName || b.droppingName) && (
+                    <div className="col-span-2"><span className="block text-ink-400">Pickup / drop</span><span className="font-medium text-ink-700">{b.boardingName ?? "—"} → {b.droppingName ?? "—"}</span></div>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-3 border-t border-[var(--border)] pt-3">
+                  <Link href={`/tickets/${b.id}`} className="text-xs font-medium text-brand-600 hover:underline">
+                    <Printer size={12} className="mr-1 inline" /> View booking
+                  </Link>
+                  {b.status !== "CANCELLED" && <CancelBookingButton bookingId={b.id} />}
+                  {b.status !== "CANCELLED" && (
+                    <Link href={`/bookings/${b.id}/edit`} className="text-xs font-medium text-ink-600 hover:text-brand-700">
+                      <Pencil size={12} className="mr-1 inline" /> Edit
+                    </Link>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] md:block">
           <table className="w-full min-w-[52rem] text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-left text-xs uppercase tracking-wide text-ink-500">
               <tr>
@@ -209,6 +262,7 @@ export default async function BookingsPage({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

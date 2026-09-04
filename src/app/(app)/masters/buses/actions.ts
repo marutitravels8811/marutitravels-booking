@@ -120,3 +120,30 @@ export async function removeBusAction(busId: string): Promise<BusActionResult> {
     return failure(e, "removeBus");
   }
 }
+
+export async function updateBusRegistrationAction(
+    busId: string, registrationNo: string,
+  ): Promise<BusActionResult> {
+    const session = await requireSession();
+    const value = registrationNo.trim().toUpperCase().replace(/\s+/g, " ");
+    if (value.length < 4 || value.length > 20) {
+      return { ok: false, error: "Registration number must be 4 to 20 characters." };
+    }
+
+    try {
+      await db.transaction(async (tx) => {
+        const [existing] = await tx.select().from(bus).where(eq(bus.id, busId)).limit(1);
+        if (!existing) throw new AppError("BUS_NOT_FOUND", "That bus no longer exists.");
+        await tx.update(bus).set({ registrationNo: value }).where(eq(bus.id, busId));
+        await writeAudit(tx, {
+          agentId: session.agentId, action: "BUS_UPDATED", entityType: "bus", entityId: busId,
+          before: { registrationNo: existing.registrationNo },
+          after: { registrationNo: value },
+        });
+      });
+      revalidatePath("/masters/buses");
+      return { ok: true, busId };
+    } catch (e) {
+      return failure(e, "updateBusRegistration");
+  }
+}

@@ -29,6 +29,13 @@
       "when": 1788505652821,
       "tag": "0003_clean_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788529500000,
+      "tag": "0004_remove_audit_logs",
+      "breakpoints": true
     }
   ]
 }

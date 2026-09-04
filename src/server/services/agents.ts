@@ -1,7 +1,7 @@
 // Server-side only. Not marked `server-only` so scripts can seed agents.
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { agent, auditLog, passwordReset } from "@/db/schema";
+import { agent, passwordReset } from "@/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { writeAudit } from "@/server/audit";
 import { AppError } from "@/server/errors";
@@ -321,19 +321,4 @@ export async function dismissReset(p: {
       entityType: "password_reset", entityId: p.resetId,
     });
   });
-}
-
-/** Recent security-relevant events for one agent, for the detail panel. */
-export async function agentActivity(agentId: string, limit = 12) {
-  return db.select({
-    action: auditLog.action,
-    createdAt: auditLog.createdAt,
-    ip: auditLog.ip,
-  }).from(auditLog)
-    .where(and(
-      eq(auditLog.entityType, "agent"),
-      eq(auditLog.entityId, agentId),
-    ))
-    .orderBy(desc(auditLog.createdAt))
-    .limit(limit);
 }

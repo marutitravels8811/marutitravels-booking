@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { db, pool } from "../../src/db";
 import {
   agent, booking, bookingSeat, bus, route, seat, seatHold, trip, tripSeatState,
-  auditLog, payment, scheduleTemplate, seatLayout,
+  payment, scheduleTemplate, seatLayout,
 } from "../../src/db/schema";
 import { hashPassword } from "../../src/lib/password";
 import { generateStandardLayout } from "../../src/lib/seat-layout";
@@ -146,8 +146,7 @@ export async function findSeatsOnMultipleBookings(tripId: string) {
 }
 
 export async function cleanup() {
-  // children first; most tables cascade, but auditLog and payment do not
-  await db.delete(auditLog);
+  // children first; most tables cascade, but payment does not
   await db.delete(payment);
   await db.delete(bookingSeat);
   // status must drop to AVAILABLE in the same statement: the held_needs_hold

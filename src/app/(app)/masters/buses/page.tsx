@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { bus, seat, seatLayout, trip } from "@/db/schema";
 import { RemoveMasterButton } from "../RemoveMasterButton";
 import { removeBusAction } from "./actions";
+import { BusRegistrationEditor } from "./BusRegistrationEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,34 @@ export default async function BusesPage() {
           </Link>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+        <div>
+          <div className="grid gap-3 md:hidden">
+            {rows.map((b) => (
+              <article key={b.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold text-ink-900">{b.displayName}</h2>
+                    {b.note && <p className="mt-0.5 text-xs text-ink-500">{b.note}</p>}
+                  </div>
+                  <span className={b.isActive
+                    ? "rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700"
+                    : "rounded-full bg-ink-100 px-2 py-0.5 text-xs font-medium text-ink-500"}>
+                    {b.isActive ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-[var(--border)] pt-3 text-xs">
+                  <BusRegistrationEditor busId={b.id} initialValue={b.registrationNo} />
+                  <div><span className="block text-ink-400">Berths</span><span className="font-medium tabular-nums text-ink-700">{b.seatCount}</span></div>
+                  <div className="col-span-2"><span className="block text-ink-400">Layout</span><span className="font-medium text-ink-700">{b.layoutName ?? "—"}{b.layoutVersion ? ` · v${b.layoutVersion}` : ""}</span></div>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-3 border-t border-[var(--border)] pt-3">
+                  <Link href={`/masters/buses/${b.id}`} className="text-xs font-medium text-brand-600 hover:underline">Edit seating</Link>
+                  <RemoveMasterButton label="bus" id={b.id} futureTripCount={b.futureTripCount} onRemove={removeBusAction} />
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] md:block">
           <table className="w-full min-w-[42rem] text-sm">
             <thead className="border-b border-[var(--border)] bg-[var(--surface-2)] text-left text-xs uppercase tracking-wide text-ink-500">
               <tr>
@@ -99,6 +127,7 @@ export default async function BusesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

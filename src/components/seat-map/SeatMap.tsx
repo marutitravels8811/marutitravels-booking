@@ -29,6 +29,8 @@ export interface SeatMapProps<T extends SeatLike> {
   onSeatClick?: (seat: T) => void;
   /** editor mode: clicking an empty cell adds a berth there */
   onEmptyCellClick?: (deck: Deck, rowIndex: number, colIndex: number) => void;
+  editSeatNumbers?: boolean;
+  onSeatNumberChange?: (seat: T, value: string) => void;
   disabledSeat?: (seat: T) => boolean;
   /** highlight ring, used by the editor for the current selection */
   highlightKeys?: Set<string>;
@@ -43,7 +45,7 @@ function keyOf(s: SeatLike): string {
 export function SeatMap<T extends SeatLike>({
   seats, sleeperRows, sleeperCols, cabinCols,
   stateOf, titleOf, onSeatClick, onEmptyCellClick, disabledSeat,
-  highlightKeys, compact = false, showLegend = true,
+  highlightKeys, compact = false, showLegend = true, editSeatNumbers, onSeatNumberChange,
 }: SeatMapProps<T>) {
   const cabinSeats = seats.filter((s) => s.deck === "CABIN");
 
@@ -54,7 +56,7 @@ export function SeatMap<T extends SeatLike>({
           label="Cabin"
           sublabel={`${cabinSeats.filter((s) => s.isActive).length} seats`}
           seats={seats} deck="CABIN" rows={1} cols={Math.max(cabinCols, 1)}
-          {...{ stateOf, titleOf, onSeatClick, onEmptyCellClick, disabledSeat, highlightKeys, compact }}
+          {...{ stateOf, titleOf, onSeatClick, onEmptyCellClick, disabledSeat, highlightKeys, compact, editSeatNumbers, onSeatNumberChange }}
         />
       )}
 
@@ -65,7 +67,7 @@ export function SeatMap<T extends SeatLike>({
             label={deck === "LOWER" ? "Lower deck" : "Upper deck"}
             sublabel={`${seats.filter((s) => s.deck === deck && s.isActive).length} berths`}
             seats={seats} deck={deck} rows={sleeperRows} cols={sleeperCols}
-            {...{ stateOf, titleOf, onSeatClick, onEmptyCellClick, disabledSeat, highlightKeys, compact }}
+            {...{ stateOf, titleOf, onSeatClick, onEmptyCellClick, disabledSeat, highlightKeys, compact, editSeatNumbers, onSeatNumberChange }}
           />
         ))}
       </div>
@@ -78,12 +80,12 @@ export function SeatMap<T extends SeatLike>({
 function DeckPanel<T extends SeatLike>({
   label, sublabel, seats, deck, rows, cols,
   stateOf, titleOf, onSeatClick, onEmptyCellClick, disabledSeat,
-  highlightKeys, compact,
+  highlightKeys, compact, editSeatNumbers, onSeatNumberChange,
 }: {
   label: string; sublabel: string; seats: T[]; deck: Deck;
   rows: number; cols: number;
 } & Pick<SeatMapProps<T>,
-  "stateOf" | "titleOf" | "onSeatClick" | "onEmptyCellClick" | "disabledSeat" | "highlightKeys" | "compact">) {
+  "stateOf" | "titleOf" | "onSeatClick" | "onEmptyCellClick" | "disabledSeat" | "highlightKeys" | "compact" | "editSeatNumbers" | "onSeatNumberChange">) {
   const grid = buildGrid(seats, deck, rows, cols);
   // 44px is the minimum comfortable touch target; the desktop size is larger
   const size = compact ? "h-10 sm:h-9" : "h-12";
@@ -139,10 +141,10 @@ function DeckPanel<T extends SeatLike>({
               const k = keyOf(s);
 
               return (
-                <button
-                  key={k} type="button"
+                editSeatNumbers ? (
+                <div
+                  key={k}
                   onClick={() => !disabled && onSeatClick?.(s)}
-                  disabled={disabled || !onSeatClick}
                   title={titleOf?.(s) ?? s.seatNumber}
                   aria-label={`Seat ${s.seatNumber}, ${labelForType(s.berthType)}, ${state.toLowerCase().replace(/_/g, " ")}`}
                   data-sofa-group={g ?? undefined}
@@ -159,7 +161,10 @@ function DeckPanel<T extends SeatLike>({
                     isDouble && s.sofaPosition === "A" && "rounded-r-sm",
                     isDouble && s.sofaPosition === "B" && "rounded-l-sm",
                   )}>
-                  <span className="leading-none">{s.seatNumber}</span>
+                  <input aria-label={`Seat number ${s.seatNumber}`} value={s.seatNumber}
+                    onChange={(e) => onSeatNumberChange?.(s, e.target.value.toUpperCase())}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full bg-transparent text-center text-xs font-semibold outline-none" />
                   {state === "BOOKED" && s.customerName && (
                     <span className="max-w-full truncate px-1 text-[9px] font-medium leading-none opacity-80">
                       {s.customerName}
@@ -169,7 +174,32 @@ function DeckPanel<T extends SeatLike>({
                     <span aria-hidden
                       className="absolute -right-[7px] top-1/2 z-10 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-[var(--sb)] bg-[var(--sc)]" />
                   )}
+                </div>
+                ) : (
+                <button
+                  key={k} type="button"
+                  onClick={() => !disabled && onSeatClick?.(s)}
+                  disabled={disabled || !onSeatClick}
+                  title={titleOf?.(s) ?? s.seatNumber}
+                  aria-label={`Seat ${s.seatNumber}, ${labelForType(s.berthType)}, ${state.toLowerCase().replace(/_/g, " ")}`}
+                  data-sofa-group={g ?? undefined}
+                  className={cn(
+                    "relative flex-1 rounded-lg border-2 text-xs font-semibold transition",
+                    "flex flex-col items-center justify-center gap-0.5",
+                    size, STATE_CLASS[state === "EMPTY" ? "AVAILABLE" : state],
+                    "border-[var(--sb)] bg-[var(--sc)] text-[var(--st)]",
+                    !s.isActive && "opacity-40 grayscale",
+                    highlightKeys?.has(k) && "ring-2 ring-brand-500 ring-offset-1",
+                    disabled ? "cursor-not-allowed" : onSeatClick && "cursor-pointer hover:brightness-97",
+                    isDouble && s.sofaPosition === "A" && "rounded-r-sm",
+                    isDouble && s.sofaPosition === "B" && "rounded-l-sm",
+                  )}>
+                  <span className="leading-none">{s.seatNumber}</span>
+                  {state === "BOOKED" && s.customerName && (
+                    <span className="max-w-full truncate px-1 text-[9px] font-medium leading-none opacity-80">{s.customerName}</span>
+                  )}
                 </button>
+                )
               );
             })}
           </div>
