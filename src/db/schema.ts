@@ -39,6 +39,7 @@ export const doubleSofaPolicyEnum = pgEnum("double_sofa_policy", [
   "INDEPENDENT", "PAIRED", "SOFT_PAIR",
 ]);
 export const genderEnum = pgEnum("gender", ["M", "F", "O"]);
+export const cleanupFrequencyEnum = pgEnum("cleanup_frequency", ["DAILY", "WEEKLY"]);
 
 /* ────────────────────────────── agent ────────────────────────────── */
 
@@ -56,6 +57,20 @@ export const agent = pgTable("agent", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("agent_email_uq").on(t.email)]);
+
+export const dataRetentionSetting = pgTable("data_retention_setting", {
+  id: integer("id").primaryKey().default(1),
+  enabled: boolean("enabled").notNull().default(false),
+  retentionDays: integer("retention_days").notNull().default(60),
+  frequency: cleanupFrequencyEnum("frequency").notNull().default("DAILY"),
+  deleteBookings: boolean("delete_bookings").notNull().default(true),
+  deleteExpiredHolds: boolean("delete_expired_holds").notNull().default(true),
+  deleteCompletedTrips: boolean("delete_completed_trips").notNull().default(false),
+  deleteIdempotencyKeys: boolean("delete_idempotency_keys").notNull().default(true),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+  updatedBy: uuid("updated_by").references(() => agent.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const passwordResetStatusEnum = pgEnum("password_reset_status", [
   "PENDING", "COMPLETED", "CANCELLED", "EXPIRED",

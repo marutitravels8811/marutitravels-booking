@@ -90,7 +90,7 @@ export function HoldsTray({ initial, serverNow }: {
           holds={others} now={now} busyId={busyId} pending={pending}
           onRelease={(id) => {
             const reason = window.prompt(
-              "Releasing another agent's reservation is recorded in the audit log.\nWhy are you releasing it?");
+              "Release this reservation for another agent?\nWhy are you releasing it?");
             if (reason?.trim()) act(id, () => releaseHoldFromTrayAction(id, reason.trim()));
           }}
           onExtend={null}

@@ -17,14 +17,12 @@ Stack decisions and the phased build plan live in [`docs/PLAN.md`](docs/PLAN.md)
 - **Layout versioning** — once a trip uses a layout it freezes; saving edits
   creates a new version, so tickets already printed keep matching the seats they
   were sold against.
-- **Audit log** — append-only, records every state change with actor, timestamp,
-  IP and a before/after diff.
 - **Agents** — add colleagues, deactivate them, reset a forgotten password.
 
 ## Accounts and passwords
 
-There is one role. Everyone can do everything, and the audit log records who
-did what — restricting actions was traded for making every action attributable.
+There is one role. Everyone can do everything. Agents are deactivated rather
+than deleted so historical bookings keep their creator reference.
 
 **Adding an agent** generates a one-time password shown once on screen. It uses
 no characters that are ambiguous read aloud (no `0`/`O`, `1`/`l`, `5`/`S`) and is

@@ -36,6 +36,20 @@
       "when": 1788529500000,
       "tag": "0004_remove_audit_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788690000000,
+      "tag": "0005_data_retention",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788673852658,
+      "tag": "0006_unusual_rawhide_kid",
+      "breakpoints": true
     }
   ]
 }

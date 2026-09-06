@@ -4,8 +4,8 @@ import { db, pool } from "../src/db";
 import { agent } from "../src/db/schema";
 import { hashPassword } from "../src/lib/password";
 
-const EMAIL = process.env.SEED_EMAIL ?? "admin@office.local";
-const PASSWORD = process.env.SEED_PASSWORD ?? "changeme123";
+const EMAIL = process.env.SEED_EMAIL ?? "marutitravels8811@gmail.com";
+const PASSWORD = process.env.SEED_PASSWORD ?? "88119393";
 
 async function main() {
   console.log("Seeding…");

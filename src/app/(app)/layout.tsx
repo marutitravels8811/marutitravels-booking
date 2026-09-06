@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import {
   BarChart3, Bus, CalendarClock, LayoutDashboard, ListChecks, Route as RouteIcon,
-  Ticket, Timer, Users,
+  Ticket, Timer, Users, DatabaseZap,
 } from "lucide-react";
 import { getVerifiedSession, destroySession } from "@/server/auth";
 import { AppShell } from "./AppShell";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/masters/routes", label: "Routes", icon: <RouteIcon size={16} /> },
   { href: "/masters/schedules", label: "Schedules", icon: <CalendarClock size={16} /> },
   { href: "/masters/agents", label: "Agents", icon: <Users size={16} /> },
+  { href: "/data-retention", label: "Data cleanup", icon: <DatabaseZap size={16} /> },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

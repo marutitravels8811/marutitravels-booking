@@ -96,7 +96,7 @@ export function AgentsScreen({
           <div>
             <h2 className="text-sm font-semibold text-ink-800">Agents</h2>
             <p className="text-xs text-ink-500">
-              Everyone can do everything — the audit log records who did what.
+              Everyone can manage bookings and operational settings.
             </p>
           </div>
           <button type="button" onClick={() => { setAdding(true); setEditing(null); }}
