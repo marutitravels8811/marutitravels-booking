@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { runAutomaticRetention } from "@/server/services/data-retention";
+import { isAuthorizedCronRequest } from "@/server/cron-auth";
 
 export const dynamic = "force-dynamic";
 
+/** Automatic retention endpoint for cron-job.org or manual requests. */
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const auth = request.headers.get("authorization");
-  if (secret && auth !== `Bearer ${secret}`) {
+  if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json(
       { error: { code: "UNAUTHORIZED", message: "Bad or missing cron secret." } },
       { status: 401 },
