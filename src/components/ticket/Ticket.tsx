@@ -61,7 +61,7 @@ export function Ticket({
         <div className="t-office t-office-left">
           <span className="t-office-label">ઓફિસ ૧</span>
           <span className="t-contact">{office.address ?? "—"}</span>
-          <span className="t-contact"><strong>ફોન:</strong> {office.phone ?? "—"}</span>
+          <span className="t-contact t-phone"><strong>ફોન:</strong> {office.phone ?? "—"}</span>
         </div>
         <div className="t-office t-office-center">
           <span className="t-op">{office.name}</span>
@@ -70,7 +70,7 @@ export function Ticket({
         <div className="t-office t-office-right">
           <span className="t-office-label">ઓફિસ ૨</span>
           <span className="t-contact">{office.altAddress ?? "—"}</span>
-          <span className="t-contact"><strong>ફોન:</strong> {office.altPhone ?? "—"}</span>
+          <span className="t-contact t-phone"><strong>ફોન:</strong> {office.altPhone ?? "—"}</span>
         </div>
       </header>
 

@@ -221,6 +221,7 @@ html, body {
 .t-contact { font-size: var(--fs-xs); color: #475569; min-width: 0;
             overflow: hidden; text-overflow: ellipsis; white-space: normal; }
 .t-office .t-contact { font-size: calc(var(--fs-xs) * 1.2); line-height: 1.25; }
+.t-office .t-phone { white-space: pre-line; }
 .t-pnr { font-family: var(--font-mono); font-weight: 700;
          font-size: var(--fs-lg); letter-spacing: .05em; white-space: nowrap; }
 .t-pnr-label { font-family: inherit; font-size: var(--fs-xs); letter-spacing: 0; }

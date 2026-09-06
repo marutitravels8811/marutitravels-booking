@@ -27,7 +27,7 @@ export default async function TripTicketsPage({
     getTicketsForTrip(tripId, { includeCancelled }),
   ]);
   if (!header) notFound();
-  const office = getOfficeDetails();
+  const office = await getOfficeDetails();
 
   const seatsSold = tickets.reduce((n, t) => n + t.seats.length, 0);
 

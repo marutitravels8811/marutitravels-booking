@@ -72,6 +72,16 @@ export const dataRetentionSetting = pgTable("data_retention_setting", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const officeSetting = pgTable("office_setting", {
+  id: integer("id").primaryKey().default(1),
+  address: text("address"),
+  phone: text("phone"),
+  altAddress: text("alt_address"),
+  altPhone: text("alt_phone"),
+  updatedBy: uuid("updated_by").references(() => agent.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const passwordResetStatusEnum = pgEnum("password_reset_status", [
   "PENDING", "COMPLETED", "CANCELLED", "EXPIRED",
 ]);

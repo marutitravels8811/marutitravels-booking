@@ -18,7 +18,7 @@ export default async function TicketPage({
 
   const ticket = await getTicket(bookingId);
   if (!ticket) notFound();
-  const office = getOfficeDetails();
+  const office = await getOfficeDetails();
 
   return (
     <div className="p-4 sm:p-6">

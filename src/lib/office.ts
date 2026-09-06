@@ -1,11 +1,8 @@
 /**
  * Operator identity printed on every ticket.
  *
- * These live in the environment rather than the database because they change
- * roughly never, and a wrong phone number on a stack of printed tickets should
- * require a deploy rather than a stray click in an admin screen. Defaults are
- * deliberately obvious placeholders so an unconfigured deployment is caught at
- * the first print, not by a customer.
+ * The two office addresses and phone numbers are stored in the admin panel so
+ * ticket corrections do not require an environment change or redeployment.
  */
 export interface OfficeDetails {
   name: string;
@@ -20,14 +17,18 @@ export interface OfficeDetails {
   terms: string[];
 }
 
-export function getOfficeDetails(): OfficeDetails {
+import { db } from "@/db";
+import { officeSetting } from "@/db/schema";
+
+export async function getOfficeDetails(): Promise<OfficeDetails> {
+  const [setting] = await db.select().from(officeSetting).limit(1);
   return {
     name: process.env.OFFICE_NAME || "SET OFFICE_NAME",
     tagline: process.env.OFFICE_TAGLINE || null,
-    phone: process.env.OFFICE_PHONE || null,
-    altPhone: process.env.OFFICE_ALT_PHONE || null,
-    address: process.env.OFFICE_ADDRESS || null,
-    altAddress: process.env.OFFICE_ALT_ADDRESS || null,
+    phone: setting?.phone ?? null,
+    altPhone: setting?.altPhone ?? null,
+    address: setting?.address ?? null,
+    altAddress: setting?.altAddress ?? null,
     email: process.env.OFFICE_EMAIL || null,
     gstin: process.env.OFFICE_GSTIN || null,
     terms: (process.env.OFFICE_TERMS ||
